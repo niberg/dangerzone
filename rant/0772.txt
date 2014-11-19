@@ -1,0 +1,7 @@
+Fuck Windows 8.1
+
+Just got a new Asus laptop almost a week ago with Windows 8.1. Since then Windows has crashed 3 times, I had to fucking Google to find the hidden 'hibernate' option, windows took 30 minutes to update only to FAIL and is now stuck reverting changes. Hopefully I'm not stuck in a boot loop..
+
+Really, Windows fucking 98 was more stable than this. My laptops specs are rock solid, but this is keeps fucking up. It is insane and tempts me every time to a Linux distro. Jesus fuck Microsoft, get your shit together.
+
+Edit: It did eventually sort itself out after over an hour had passed. Almost 2 hours just to install, fail and revert 13 updates. Almost 2.. fucking hours.

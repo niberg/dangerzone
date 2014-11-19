@@ -1,0 +1,25 @@
+"/s" is retarded
+
+There are two reasons to use /s at the end of a sentence.
+
+A) Because you're trying to hard to be sarcastic.
+
+B) Because you're 14 and just do what everybody else is doing.
+
+if (A == true) {
+DoType = false; //do not send message
+return;
+}
+
+if (B == true) {
+Message.Remove(Message.Length - 2); // remove the last two characters from message
+Message.Post();
+}
+
+/s is the text equivalent of explaining the joke three seconds after it, and then saying "get it guise?  So funny amirite xDDD lel."
+
+If you do this, stop.  Now.  It lets people get away with shitposting (e.g. going on a thread about the Holocaust and saying "Hitler was so cool /s". Nobody cares.  Leave.
+
+Proper sarcasm should not need to be explained.  Proper sarcasm is funny.  If you are going to put /s after your sentence DO NOT SAY ANYTHING.  It's like telling a mean fat joke, and then saying "no offense" directly at the fat guy in your group.
+
+Jesus fucking Christ.

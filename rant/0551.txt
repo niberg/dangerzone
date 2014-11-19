@@ -1,0 +1,15 @@
+Imgur is worse than before
+
+Imgur recently "updated" their site and it's just worse than before.
+
+The album info is now at the top of the page so you cannot read the description or see the number of images while you're scrolling through the album.
+
+The album info is smaller and harder to read.
+
+Thumbnails don't load.
+
+Images now load from top to bottom only, so that if you scroll to the bottom of the album to see the last few pictures you have to wait for the ENTIRE album to load. Before, it would try to load whatever images you were looking at the soonest.
+
+Who did this shit? Someone was actually paid for this? Terrible decisions. Completely incompetent.
+
+I'm currently waiting for a 500+ MB album to load because I want to see the last few images.
