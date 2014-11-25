@@ -25,7 +25,6 @@ class main:
 	
 	def get_dataset_features(posts):
 		features = [[0, 0], [0, 0], [0, 0], [0, 0], {}]
-		word_freqs = {}
                 # features[0][0] = number_rant_posts
                 # features[0][1] = number_sw_posts
                 # features[1][0] = rant_number_sentences
@@ -36,7 +35,7 @@ class main:
                 # features[3][1] = sw_total_number_tokens
                 # features[4][0] = rant_total_token_lengths
                 # features[4][1] = sw_total_token_lengths
-                # features[5][0] = word_freqs
+                # features[5] = word_freqs
 
 
 		for post in posts:
