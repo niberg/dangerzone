@@ -36,37 +36,29 @@ class main:
                 # features[3][1] = sw_total_number_tokens
                 # features[4][0] = rant_total_token_lengths
                 # features[4][1] = sw_total_token_lengths
-                # features[5] = word_freqs
+                # features[5][0] = word_freqs
 
 
 		for post in posts:
 			localsentences = sent_tokenize(post[0])
 			sentences = [word_tokenize(s) for s in localsentences]
-			if post[1] == 1:
-				features[0][1] += 1
-			else:
-				features[0][0] += 1
+			class = post[1]
+			features[0][class] += 1
 
 			for sentence in sentences:
-				if post[1] == 1:
-					features[1][1] += 1
-				else:
-					features[1][0] += 1
+				features[1][class] += 1
 				for token in sentence:
-					if post[1] == 1:
-						features[2][1] += 1
-						features[3][1] += 1
-						features[4][1] += len(token)
-					else:
-                                        	features[2][0] += 1
-						features[3][0] += 1
-						features[4][0] += len(token)
+                                        	features[2][class] += 1
+						features[3][class] += 1
+						features[4][class] += len(token)
 
-					if token not in word_freqs:
-						word_freqs[token] = [1, 0]
-					else:
-						word_freqs[token][0] += 1
-                features[5] = word_freqs		
+					if token not in features[5]:
+                                            if class == 0:
+						features[5][token] = [1, 0]
+					    else:
+                                                features[5][token] = [0, 1]
+                                        else:
+						features[5][token][class] += 1
 		return features
 
 
