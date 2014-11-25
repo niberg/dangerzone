@@ -23,49 +23,51 @@ class main:
 				posts.append(post.read(), class)
 		return posts
 	
-	def get_features(posts):
-		features = []
-		number_sw_posts = 0
-		number_rant_posts = 0
+	def get_dataset_features(posts):
+		features = [[0, 0], [0, 0], [0, 0], [0, 0], {}]
 		word_freqs = {}
-		rant_number_sentences = 0
-		rant_total_sentence_lengths = 0
-		rant_total_number_tokens = 0
-		rant_total_token_lengths = 0
-		sw_number_sentences = 0
-		sw_total_sentence_lengths = 0
-		sw_total_number_tokens = 0
-		sw_total_token_lengths = 0
+                # features[0][0] = number_rant_posts
+                # features[0][1] = number_sw_posts
+                # features[1][0] = rant_number_sentences
+                # features[1][1] = sw_number_sentences
+                # features[2][0] = rant_total_sentence_lengths
+                # features[2][1] = sw_total_sentence_lengths
+                # features[3][0] = rant_total_number_tokens
+                # features[3][1] = sw_total_number_tokens
+                # features[4][0] = rant_total_token_lengths
+                # features[4][1] = sw_total_token_lengths
+                # features[5] = word_freqs
+
 
 		for post in posts:
 			localsentences = sent_tokenize(post[0])
 			sentences = [word_tokenize(s) for s in localsentences]
 			if post[1] == 1:
-				number_sw_posts += 1
+				features[0][1] += 1
 			else:
-				number_rant_posts += 1
+				features[0][0] += 1
 
 			for sentence in sentences:
 				if post[1] == 1:
-					sw_number_sentences += 1
+					features[1][1] += 1
 				else:
-					rant_number_sentences += 1
+					features[1][0] += 1
 				for token in sentence:
 					if post[1] == 1:
-						sw_total_sentence_lengths += 1
-						sw_total_number_tokens += 1
-						sw_total_token_lengths += len(token)
+						features[2][1] += 1
+						features[3][1] += 1
+						features[4][1] += len(token)
 					else:
-						rant_total_sentence_lengths += 1
-						rant_total_number_tokens += 1
-						rant_total_token_lengths += len(token)
+                                        	features[2][0] += 1
+						features[3][0] += 1
+						features[4][0] += len(token)
+
 					if token not in word_freqs:
 						word_freqs[token] = [1, 0]
 					else:
 						word_freqs[token][0] += 1
-		features[0] = 
-				
-		
+                features[5] = word_freqs		
+		return features
 
 
 	def write_arff(posts, features):
