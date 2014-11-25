@@ -1,4 +1,0 @@
-Average sentence length for rant: 81.2810553532
-Average sentence length for suicidewatch: 76.7404360582
-Average word length for suicidewatch: 3.4460765353
-Average word length for rant: 3.57345964099
