@@ -1,9 +1,0 @@
-Cannot eject iPod nano.
-
-I hit the eject button in iTunes: "Cannot eject iPod because another program is using it." I look around in my programs - the only others are Photoshop and Finder, neither of which are using it. I try again: "Cannot eject iPod because another program is using it."
-
-I go to Finder: "Cannot eject iPod because 'iTunes' is using it." I quit iTunes, which isn't using it at all, it's just an open program. I eject from Finder again, it ejects.
-
-"Cannot eject from iTunes because iTunes is using it."
-
-Thanks, Apple.
