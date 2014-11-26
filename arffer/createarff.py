@@ -3,12 +3,7 @@ import os
 import codecs
 from nltk.tokenize import word_tokenize, sent_tokenize
 
-class arff_creator:
-	
-	features = []
-	
-	# Returns a list of features
-	def get_features(posts):
+
 
 # format = [is_sw, sentence_count, average_word_length, word_I, word_!]
 
@@ -26,6 +21,7 @@ for fn in os.listdir('dataset'):
 	average_sentence_length = 0
 	word_I = 0
 	word_excl = 0
+	word_freqs = {}
 	
 	# Assign is_sw
 	if fn.startswith('sw'):
