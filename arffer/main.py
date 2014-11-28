@@ -3,27 +3,48 @@ import os
 import codecs
 import operator
 import math
+import getopt
 from nltk.tokenize import word_tokenize, sent_tokenize
+
+top_n = 500
+threshold = 20
+diffmeasure = "advanced"
+dataset = "dataset"
+alpha = 100
 
 
 
 
 def main():
-    global top_x
+    global top_n
     global threshold
     global diffmeasure
-    global advanced
-    if len(sys.argv) < 4:
-        print "Usage example: python main.py dataset 100 20 absolute"
-        sys.exit(0)
-    top_x = int(sys.argv[2])
-    threshold = int(sys.argv[3])
-    diffmeasure = sys.argv[4]
-    if sys.argv[4] != "absolute" and sys.argv[4] != "relative" and sys.argv[4] != "advanced":
-        print 'Fourth argument needs to be "absolute", "relative" or "advanced"'
-        sys.exit(0)
-      
-    posts = read_posts(sys.argv[1])
+    global dataset
+    global alpha
+
+    try:
+        options, remainder = getopt.getopt(sys.argv[1:], 'n:t:i:d:ha:', ['top_n=', 'threshold=', 'input=', 'diffmeasure=', 'help', 'alpha='])
+    except getopt.GetoptError as err:
+        # print help information and exit:
+        print str(err) # will print something like "option -a not recognized"
+        usage()
+        sys.exit(2)
+
+    for opt, arg in options:
+        if opt in ('-n', '--top_n'):
+            top_n = int(arg)
+        elif opt in ('-t', '--threshold'):
+            threshold = int(arg)
+        elif opt in ('-i', '--input'):
+            dataset = arg
+        elif opt in ('-d', '--diffmeasure'):
+            diffmeasure = arg
+        elif opt in ('-h', '--help'):
+            usage()
+        elif opt in ('-a', '--alpha'):
+            alpha = int(arg)
+  
+    posts = read_posts(dataset)
     post_features, word_freqs = get_features(posts)
     top_words = get_top_words(word_freqs)
     write_arff(post_features, top_words)
@@ -164,7 +185,8 @@ def get_top_words(word_freqs):
                 if rant == 0:
                     rant = 0.001
                 #Get the adjusted relative difference between frequency for rant and frequency for sw
-                diff = 100 * ((sw - rant)/float(sw)) * (1 - math.exp(-(sw - rant)/100))
+                #I found this on the INTERNET!
+                diff = 100 * ((sw - rant)/float(sw)) * (1 - math.exp(-(sw - rant)/alpha))
                 differences[word] = diff
                 
      
@@ -173,7 +195,7 @@ def get_top_words(word_freqs):
     sorted_differences = sorted(differences.items(), key=operator.itemgetter(1), reverse=True)
     #Get top x words
     top_words = [x[0] for x in sorted_differences]
-    top_words = top_words[:top_x]
+    top_words = top_words[:top_n]
     
     return top_words
     
@@ -225,6 +247,10 @@ def get_dataset_features(posts):
                         features[5][token][pclass] += 1
     return features
     
+def usage():
+    print "Usage: python main.py [--input <dir>] [--top_n <n>] [--treshold <n>] [--diffmeasure <relative|absolute|advanced>] [--alpha <n>] (affects advanced diffmeasure only)"
+    sys.exit(0)
+    
 
-        
-main()
+if __name__ == "__main__":
+    main()
