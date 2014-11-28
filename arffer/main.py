@@ -127,8 +127,9 @@ def get_features(posts):
         sortedngrams = sorted(ngram_freqs.items(), key=operator.itemgetter(1), reverse=True)
         sortedngrams = sortedngrams[:100]
         for x, y in sortedngrams:
-            a, b, c = x 
-            print a + ' ' + ' ' + b + ' ' + c + ' :' + str(y)
+            for z in x:
+                sys.stdout.write(z + ' ')
+            print ':' + str(y)
     return all_post_features, word_freqs
     
 
