@@ -5,12 +5,14 @@ import operator
 import math
 import getopt
 from nltk.tokenize import word_tokenize, sent_tokenize
+from collections import defaultdict
 
 top_n = 500
 threshold = 20
 diffmeasure = "advanced"
 dataset = "dataset"
 alpha = 100
+ngrams = 0
 
 
 
@@ -21,9 +23,10 @@ def main():
     global diffmeasure
     global dataset
     global alpha
+    global ngrams
 
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 'n:t:i:d:ha:', ['top_n=', 'threshold=', 'input=', 'diffmeasure=', 'help', 'alpha='])
+        options, remainder = getopt.getopt(sys.argv[1:], 'n:t:i:d:ha:g', ['top_n=', 'threshold=', 'input=', 'diffmeasure=', 'help', 'alpha=', 'ngrams='])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -43,6 +46,8 @@ def main():
             usage()
         elif opt in ('-a', '--alpha'):
             alpha = int(arg)
+        elif opt in ('-g', '--ngrams'):
+            ngrams = int(arg)
   
     posts = read_posts(dataset)
     post_features, word_freqs = get_features(posts)
@@ -70,6 +75,7 @@ def get_features(posts):
     all_post_features = []
     #Global word frequencies
     word_freqs = {}
+    ngram_freqs = defaultdict(int)
     
     for post in posts:
         #Every post needs to keep track of this information
@@ -82,6 +88,10 @@ def get_features(posts):
         
         
         for sentence in sent_word_tokenized:
+            if ngrams > 0:
+                ngramsentence = find_ngrams(sentence, ngrams)
+                for ngram in ngramsentence:
+                    ngram_freqs[ngram] += 1
             #Increase sentence count for post
             post_features[1] += 1
             for token in sentence:
@@ -113,7 +123,11 @@ def get_features(posts):
                     
         #Add the post's features to global list
         all_post_features.append(post_features)
-        
+    sortedngrams = sorted(ngram_freqs.items(), key=operator.itemgetter(1), reverse=True)
+    sortedngrams = sortedngrams[:100]
+    for x, y in sortedngrams:
+        a, b, c = x 
+        print a + ' ' + ' ' + b + ' ' + c + ' :' + str(y)
     return all_post_features, word_freqs
     
 
@@ -250,6 +264,14 @@ def get_dataset_features(posts):
 def usage():
     print "Usage: python main.py [--input <dir>] [--top_n <n>] [--treshold <n>] [--diffmeasure <relative|absolute|advanced>] [--alpha <n>] (affects advanced diffmeasure only)"
     sys.exit(0)
+    
+def find_ngrams(input_list, n):
+    return zip(*[input_list[i:] for i in range(n)])
+    
+    
+
+    
+
     
 
 if __name__ == "__main__":
