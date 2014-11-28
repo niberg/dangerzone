@@ -89,23 +89,25 @@ def write_arff(post_features, top_words):
     #Write attributes for all the top words
 
     for word in top_words:
-        f.write('@ATTRIBUTE ' + 'word' + str(top_words.index(word)) + '(' + word + ') NUMERIC\n')
+        f.write('@ATTRIBUTE ' + 'word' + str(top_words.index(word)) + ' NUMERIC     %' + word + '\n')
 
     f.write('\n@DATA\n')
     
     #Now we write the data
     #Use sparse data format
-    #Word attribute x is x +4, so first word is 5
+ 
     for x in post_features:
         average_word_length = float(x[3]) / x[2]
         average_sentence_length = float(x[2]) / x[1]
         #Static write
-        f.write('{1 ' + str(x[0]) + ', 2 ' + str(x[1]) + ', 3 ' + str(average_word_length) + ', 4 ' + str(average_sentence_length))
+        f.write('{0 ' + str(x[0]) + ', 1 ' + str(x[1]) + ', 2 ' + str(average_word_length) + ', 3 ' + str(average_sentence_length))
         #Iterate through words in post, see if any are in top words, if so write word and frequency
         #Need to keep track of which attribute word belongs to
-        for post_word, freq in x[4].iteritems():
-            if post_word in top_words:
-                f.write(', ' + str(top_words.index(post_word)+5) + ' ' + str(freq))
+        for top_word in top_words:
+            for post_word, freq in x[4].iteritems():
+                if post_word == top_word:
+                   #There are 4 attributes before the words (with zero-based index) so first word is 4
+                    f.write(', ' + str(top_words.index(post_word)+4) + ' ' + str(freq))
         #Close curly braces and newline
         f.write('}\n')
             
