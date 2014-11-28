@@ -123,11 +123,12 @@ def get_features(posts):
                     
         #Add the post's features to global list
         all_post_features.append(post_features)
-    sortedngrams = sorted(ngram_freqs.items(), key=operator.itemgetter(1), reverse=True)
-    sortedngrams = sortedngrams[:100]
-    for x, y in sortedngrams:
-        a, b, c = x 
-        print a + ' ' + ' ' + b + ' ' + c + ' :' + str(y)
+    if ngrams > 0:
+        sortedngrams = sorted(ngram_freqs.items(), key=operator.itemgetter(1), reverse=True)
+        sortedngrams = sortedngrams[:100]
+        for x, y in sortedngrams:
+            a, b, c = x 
+            print a + ' ' + ' ' + b + ' ' + c + ' :' + str(y)
     return all_post_features, word_freqs
     
 
