@@ -8,11 +8,18 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 
 
 def main():
-    if len(sys.argv) < 3:
-        print "Argument one need to be a directory and argument two an integer"
-        sys.exit(0)
     global top_x
+    global threshold
+    global absolute
+    if len(sys.argv) < 4:
+        print "Usage example: python main.py dataset 100 20 absolute"
+        sys.exit(0)
     top_x = int(sys.argv[2])
+    threshold = int(sys.argv[3])
+    if sys.argv[4] == "absolute":
+        absolute = True
+    else:
+        absolute = False
     posts = read_posts(sys.argv[1])
     post_features, word_freqs = get_features(posts)
     top_words = get_top_words(word_freqs)
@@ -49,6 +56,7 @@ def get_features(posts):
         #Get if sw or rant
         post_features[0] = post[1]
         
+        
         for sentence in sent_word_tokenized:
             #Increase sentence count for post
             post_features[1] += 1
@@ -57,23 +65,27 @@ def get_features(posts):
                 post_features[2] += 1
                 #Increase total token length for post
                 post_features[3] += len(token)
+                #Add word to global list
+                if token not in word_freqs:
+                    #Token belongs to rant
+                    if post[1] == 0:
+                        word_freqs[token] = [1, 0, 1]
+                    #Token belongs to sw
+                    else:
+                        word_freqs[token] = [0, 1, 1]
+                #If the token already exits in wordlist
+                #we can just increment using class variable
+                else:
+                        word_freqs[token][post[1]] += 1
+                        # Word exists in wordfreqs but hasn't been added for this post
+                        if token not in post_features[4]:
+                            word_freqs[token][2] += 1
                 #Add word to posts list of words
                 if token not in post_features[4]:
                     post_features[4][token] = 1
                 else:
                     post_features[4][token] += 1
-                #Add word to global list
-                if token not in word_freqs:
-                    #Token belongs to rant
-                    if post[1] == 0:
-                        word_freqs[token] = [1, 0]
-                    #Token belongs to sw
-                    else:
-                        word_freqs[token] = [0, 1]
-                #If the token already exits in wordlist
-                #we can just increment using class variable
-                else:
-                        word_freqs[token][post[1]] += 1
+
                     
         #Add the post's features to global list
         all_post_features.append(post_features)
@@ -117,11 +129,28 @@ def write_arff(post_features, top_words):
 def get_top_words(word_freqs):
     differences = {}
     #Iterate through word frequencies
-    for word, freqs in word_freqs.iteritems():
-        #Get the absolute difference between frequency for rant and frequency for sw
-        #Abs prevents negative numbers
-        diff = abs(freqs[0] - freqs[1])
-        differences[word] = diff
+    if absolute == False:
+        for word, freqs in word_freqs.iteritems(): 
+            if freqs[2] >= threshold:
+                sw = freqs[1]
+                rant = freqs[0]
+                #There's probably a more elegant way to prevent divide by zero errors
+                if sw == 0:
+                    sw = 0.001
+                if rant == 0:
+                    rant = 0.001
+                #Get the relative difference between frequency for rant and frequency for sw
+                diff = (sw - rant)/float(sw)
+                differences[word] = diff
+    else:
+        for word, freqs in word_freqs.iteritems(): 
+            if freqs[2] >= threshold:
+                sw = freqs[1]
+                rant = freqs[0]
+                #Get the absolute difference between frequency for rant and frequency for sw
+                diff = abs(sw - rant)
+                differences[word] = diff
+    
     #Sort in descending order    
     sorted_differences = sorted(differences.items(), key=operator.itemgetter(1), reverse=True)
     #Get top x words
