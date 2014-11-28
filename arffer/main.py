@@ -2,6 +2,7 @@ import sys
 import os
 import codecs
 import operator
+import math
 from nltk.tokenize import word_tokenize, sent_tokenize
 
 
@@ -10,16 +11,18 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 def main():
     global top_x
     global threshold
-    global absolute
+    global diffmeasure
+    global advanced
     if len(sys.argv) < 4:
         print "Usage example: python main.py dataset 100 20 absolute"
         sys.exit(0)
     top_x = int(sys.argv[2])
     threshold = int(sys.argv[3])
-    if sys.argv[4] == "absolute":
-        absolute = True
-    else:
-        absolute = False
+    diffmeasure = sys.argv[4]
+    if sys.argv[4] != "absolute" and sys.argv[4] != "relative" and sys.argv[4] != "advanced":
+        print 'Fourth argument needs to be "absolute", "relative" or "advanced"'
+        sys.exit(0)
+      
     posts = read_posts(sys.argv[1])
     post_features, word_freqs = get_features(posts)
     top_words = get_top_words(word_freqs)
@@ -129,7 +132,7 @@ def write_arff(post_features, top_words):
 def get_top_words(word_freqs):
     differences = {}
     #Iterate through word frequencies
-    if absolute == False:
+    if diffmeasure == "relative":
         for word, freqs in word_freqs.iteritems(): 
             if freqs[2] >= threshold:
                 sw = freqs[1]
@@ -142,7 +145,7 @@ def get_top_words(word_freqs):
                 #Get the relative difference between frequency for rant and frequency for sw
                 diff = (sw - rant)/float(sw)
                 differences[word] = diff
-    else:
+    elif diffmeasure == "absolute":
         for word, freqs in word_freqs.iteritems(): 
             if freqs[2] >= threshold:
                 sw = freqs[1]
@@ -150,6 +153,21 @@ def get_top_words(word_freqs):
                 #Get the absolute difference between frequency for rant and frequency for sw
                 diff = abs(sw - rant)
                 differences[word] = diff
+    else:
+        for word, freqs in word_freqs.iteritems(): 
+            if freqs[2] >= threshold:
+                sw = freqs[1]
+                rant = freqs[0]
+                #There's probably a more elegant way to prevent divide by zero errors
+                if sw == 0:
+                    sw = 0.001
+                if rant == 0:
+                    rant = 0.001
+                #Get the adjusted relative difference between frequency for rant and frequency for sw
+                diff = 100 * ((sw - rant)/float(sw)) * (1 - math.exp(-(sw - rant)/100))
+                differences[word] = diff
+                
+     
     
     #Sort in descending order    
     sorted_differences = sorted(differences.items(), key=operator.itemgetter(1), reverse=True)
@@ -206,5 +224,7 @@ def get_dataset_features(posts):
                     else:
                         features[5][token][pclass] += 1
     return features
+    
+
         
 main()
