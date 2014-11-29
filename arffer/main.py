@@ -13,7 +13,8 @@ diffmeasure = "advanced"
 dataset = "dataset"
 alpha = 100
 ngrams = 0
-
+top_n_ngrams = 100
+words = False
 
 
 
@@ -24,9 +25,11 @@ def main():
     global dataset
     global alpha
     global ngrams
+    global top_n_ngrams
+    global words
 
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 'n:t:i:d:ha:g', ['top_n=', 'threshold=', 'input=', 'diffmeasure=', 'help', 'alpha=', 'ngrams='])
+        options, remainder = getopt.getopt(sys.argv[1:], 'n:t:i:d:ha:gx:w', ['top_n=', 'threshold=', 'input=', 'diffmeasure=', 'help', 'alpha=', 'ngrams=', 'top_n_ngrams=', 'words'])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -48,11 +51,26 @@ def main():
             alpha = int(arg)
         elif opt in ('-g', '--ngrams'):
             ngrams = int(arg)
+        elif opt in ('-x', '--top_n_ngrams'):
+            top_n_ngrams = int(arg)
+        elif opt in ('-w', '--words'):
+            words = True
   
+    if ngrams == 0 and words == False:
+        print "You need to specify either --ngrams <n> or --words or both."
+        usage()
     posts = read_posts(dataset)
-    post_features, word_freqs = get_features(posts)
+    if ngrams > 0:
+        post_features, word_freqs, ngram_freqs = get_features(posts)
+    else:
+        post_features, word_freqs = get_features(posts)
     top_words = get_top_words(word_freqs)
-    write_arff(post_features, top_words)
+    if ngrams > 0:
+        top_ngrams = get_top_words(ngram_freqs)
+    if ngrams > 0:
+        write_arff(post_features, top_words, top_ngrams)
+    else:
+        write_arff(post_features, top_words)
     
 def read_posts(dir):
     posts = []
@@ -75,12 +93,18 @@ def get_features(posts):
     all_post_features = []
     #Global word frequencies
     word_freqs = {}
-    ngram_freqs = defaultdict(int)
+    if ngrams > 0:
+        ngram_freqs = {}
+    
     
     for post in posts:
         #Every post needs to keep track of this information
-        #Class, sentence count, word count, total token length, words in sentence 
-        post_features = [0, 0, 0, 0, {}]
+        #Class, sentence count, word count, total token length, words in sentence
+        #Add dictionary of ngrams if needed
+        if ngrams > 0:
+            post_features = [0, 0, 0, 0, {}, {}]
+        else:
+            post_features = [0, 0, 0, 0, {}]
         sent_tokenized = sent_tokenize(post[0])
         sent_word_tokenized = [word_tokenize(s) for s in sent_tokenized]
         #Get if sw or rant
@@ -91,7 +115,23 @@ def get_features(posts):
             if ngrams > 0:
                 ngramsentence = find_ngrams(sentence, ngrams)
                 for ngram in ngramsentence:
-                    ngram_freqs[ngram] += 1
+                    if ngram not in ngram_freqs:
+                        if post[1] == 0:
+                            ngram_freqs[ngram] = [1, 0, 1]
+                        #Token belongs to sw
+                        else:
+                            ngram_freqs[ngram] = [0, 1, 1]
+                    else:
+                        #Add ngrams to global freq list
+                        ngram_freqs[ngram][post[1]] += 1
+                        #Keep count of how many emails an ngram is in
+                        if ngram not in post_features[5]:
+                            ngram_freqs[ngram][2] += 1
+                    if ngram not in post_features[5]:
+                        post_features[5][ngram] = 1
+                    else:
+                        post_features[5][ngram] += 1
+                        
             #Increase sentence count for post
             post_features[1] += 1
             for token in sentence:
@@ -99,41 +139,38 @@ def get_features(posts):
                 post_features[2] += 1
                 #Increase total token length for post
                 post_features[3] += len(token)
-                #Add word to global list
-                if token not in word_freqs:
-                    #Token belongs to rant
-                    if post[1] == 0:
-                        word_freqs[token] = [1, 0, 1]
-                    #Token belongs to sw
+                if words:
+                    #Add word to global list
+                    if token not in word_freqs:
+                        #Token belongs to rant
+                        if post[1] == 0:
+                            word_freqs[token] = [1, 0, 1]
+                        #Token belongs to sw
+                        else:
+                            word_freqs[token] = [0, 1, 1]
+                    #If the token already exits in wordlist
+                    #we can just increment using class variable
                     else:
-                        word_freqs[token] = [0, 1, 1]
-                #If the token already exits in wordlist
-                #we can just increment using class variable
-                else:
-                        word_freqs[token][post[1]] += 1
-                        # Word exists in wordfreqs but hasn't been added for this post
-                        if token not in post_features[4]:
-                            word_freqs[token][2] += 1
-                #Add word to posts list of words
-                if token not in post_features[4]:
-                    post_features[4][token] = 1
-                else:
-                    post_features[4][token] += 1
+                            word_freqs[token][post[1]] += 1
+                            # Word exists in wordfreqs but hasn't been added for this post
+                            if token not in post_features[4]:
+                                word_freqs[token][2] += 1
+                    #Add word to posts list of words
+                    if token not in post_features[4]:
+                        post_features[4][token] = 1
+                    else:
+                        post_features[4][token] += 1
 
                     
         #Add the post's features to global list
         all_post_features.append(post_features)
     if ngrams > 0:
-        sortedngrams = sorted(ngram_freqs.items(), key=operator.itemgetter(1), reverse=True)
-        sortedngrams = sortedngrams[:100]
-        for x, y in sortedngrams:
-            for z in x:
-                sys.stdout.write(z + ' ')
-            print ':' + str(y)
+        return all_post_features, word_freqs, ngram_freqs
     return all_post_features, word_freqs
     
 
-def write_arff(post_features, top_words):
+def write_arff(post_features, top_words, top_ngrams=None):
+    
     #We need to write all the attributes before we write the actual data
     f = codecs.open('dataset.arff', 'w', 'utf-8')
     #Static write
@@ -142,6 +179,15 @@ def write_arff(post_features, top_words):
 
     for word in top_words:
         f.write('@ATTRIBUTE ' + 'word' + str(top_words.index(word)) + ' NUMERIC     %' + word + '\n')
+    
+    #Write ngram attributes
+    if ngrams > 0:
+        for ngram in top_ngrams:
+            f.write('@ATTRIBUTE ' + 'ngram' + str(top_ngrams.index(ngram)) + ' NUMERIC     %')
+            for x in ngram:
+                f.write(x + ' ')
+            f.write('\n')
+    
 
     f.write('\n@DATA\n')
     
@@ -160,6 +206,17 @@ def write_arff(post_features, top_words):
                 if post_word == top_word:
                    #There are 4 attributes before the words (with zero-based index) so first word is 4
                     f.write(', ' + str(top_words.index(post_word)+4) + ' ' + str(freq))
+                    
+        if ngrams > 0:
+            for top_ngram in top_ngrams:
+                for post_ngram, freq in x[5].iteritems():
+                    if post_ngram == top_ngram:
+                       #There are top_n + 4 attributes before the words (with zero-based index)
+                       #If there are no words to write, we don't want to add the top_n variable
+                        if top_words:
+                            f.write(', ' + str(top_ngrams.index(post_ngram)+4+top_n) + ' ' + str(freq))
+                        else:
+                            f.write(', ' + str(top_ngrams.index(post_ngram)+4) + ' ' + str(freq))
         #Close curly braces and newline
         f.write('}\n')
             
@@ -211,9 +268,15 @@ def get_top_words(word_freqs):
     sorted_differences = sorted(differences.items(), key=operator.itemgetter(1), reverse=True)
     #Get top x words
     top_words = [x[0] for x in sorted_differences]
-    top_words = top_words[:top_n]
+    #It's an ngram list if it's a tuple
+    if not top_words or type(top_words[0]) is tuple:
+        top_words = top_words[:top_n_ngrams]
+    else:
+        top_words = top_words[:top_n]
     
     return top_words
+    
+
     
 #Not really needed
 def get_dataset_features(posts):
@@ -264,7 +327,8 @@ def get_dataset_features(posts):
     return features
     
 def usage():
-    print "Usage: python main.py [--input <dir>] [--top_n <n>] [--treshold <n>] [--diffmeasure <relative|absolute|advanced>] [--alpha <n>] (affects advanced diffmeasure only)"
+    print "Usage: python main.py [--input <dir>] [--top_n <n>] [--treshold <n>]"
+    print "[--diffmeasure <relative|absolute|advanced>] [--alpha <n>] (affects advanced diffmeasure only) [--ngrams <n>] [--top_n_ngrams <n>] [--words]"
     sys.exit(0)
     
 def find_ngrams(input_list, n):
