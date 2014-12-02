@@ -25,6 +25,8 @@ train = False
 test = False
 file = "dataset.arff"
 percentage = 100
+testfolder = "test"
+testonfolder = False
 
 def main():
     global iterations
@@ -34,9 +36,11 @@ def main():
     global test
     global train
     global file
+    global testfolder
+    global testonfolder
     
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 'd:n:b:itr', ['dataset=', 'iterations=', 'bias=', 'interactive', 'test', 'train'])
+        options, remainder = getopt.getopt(sys.argv[1:], 'd:n:b:itrp', ['dataset=', 'iterations=', 'bias=', 'interactive', 'test', 'train', 'testonfolder='])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -52,20 +56,50 @@ def main():
         elif opt in ('-i', '--interactive'):
             interactive = True
             if train or test:
-                print "Only one of parameters test, train and interactive can be given."
+                print "Only one of parameters test, train, testonfolder and interactive can be given."
                 usage()             
         elif opt in ('-t', '--test'):
             test = True   
             if train or interactive:
-                print "Only one of parameters test, train and interactive can be given."
+                print "Only one of parameters test, train, testonfolder and interactive can be given."
                 usage()                
         elif opt in ('-r', '--train'):
             train = True    
             if test or interactive:
-                print "Only one of parameters test, train and interactive can be given."
+                print "Only one of parameters test, train, testonfolder and interactive can be given."
+                usage()   
+        elif opt in ('-p', '--testonfolder'):
+            testonfolder = True
+            testfolder = arg  
+            if test or interactive:
+                print "Only one of parameters test, train, testonfolder and interactive can be given."
                 usage()     
                 
 
+
+    if testonfolder:
+        word_features, ngram_features = get_arff_features(file)
+        load()
+        posts = get_test_posts(testfolder)
+        for post in posts:
+            features = extract_post_features(post[0], word_features, ngram_features)
+            prediction = predict(features)
+            print post[1] + " " + str(prediction)
+            print "With features: \n"
+            for word, value in word_features.iteritems():
+                print value
+                if value in features:
+                    sys.stdout.write(word + ", ")
+            if ngrams:
+                for ngram, value in ngram_features.iteritems():
+                    if value in features:
+                        sys.stdout.write(", (")
+                        for x in ngram:
+                            sys.stdout.write(x + ", ")
+                        sys.stdout.write(")", )
+                    
+            print "\n\n"
+            
     if interactive:
         word_features, ngram_features = get_arff_features(file)
         load()
@@ -236,13 +270,13 @@ def extract_post_features(post, word_features, ngram_features):
     for sentence in sent_word_tokenized:
         post_features[1] += 1
         if ngram_features:
-			ngramsentence = find_ngrams(sentence, ngrams)
-			for ngram in ngramsentence:
-				if ngram in ngram_features.keys():
-					if ngram in post_features[5]:
-						post_features[5][ngram] += 1
-					else:
-						post_features[5][ngram] = 1
+            ngramsentence = find_ngrams(sentence, ngrams)
+            for ngram in ngramsentence:
+                if ngram in ngram_features.keys():
+                    if ngram in post_features[5]:
+                        post_features[5][ngram] += 1
+                    else:
+                        post_features[5][ngram] = 1
         for token in sentence:
             post_features[2] += 1
             post_features[3] += len(token)
@@ -266,8 +300,15 @@ def extract_post_features(post, word_features, ngram_features):
     
     return [x[0] for x in modified_list]
     
-                
-        
+def get_test_posts(dir):
+    posts = []
+    for file in os.listdir(dir):
+        filename = os.path.join(dir, file)
+        f = codecs.open(filename, 'r', 'utf-8')
+        post = f.read()
+        posts.append((post, file))
+
+    return posts
 
     
 
