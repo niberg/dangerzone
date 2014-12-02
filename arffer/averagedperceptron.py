@@ -36,7 +36,7 @@ def main():
     global file
     
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 'd:n:b:itrf=', ['dataset=', 'iterations=', 'bias=', 'interactive', 'test=', 'train='])
+        options, remainder = getopt.getopt(sys.argv[1:], 'd:n:b:itr', ['dataset=', 'iterations=', 'bias=', 'interactive', 'test', 'train'])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -120,9 +120,9 @@ def main():
         recall = float(true_positives)/(false_negatives + true_positives)
         fscore = 2 * ((precision * recall)/(precision + recall))
         
-        print "Precision: " + str(round(precision*100, 2)) + " %"
-        print "Recall: " + str(round(recall*100, 2)) + " %"
-        print "F-score: " + str(round(fscore*100, 2)) + " %"
+        print "Precision: " + str(precision*100) + " %"
+        print "Recall: " + str(recall*100) + " %"
+        print "F-score: " + str(fscore*100) + " %"
         
     if train:
         all_features = read_arff(file)
@@ -235,13 +235,14 @@ def extract_post_features(post, word_features, ngram_features):
         ngrams = len(ngram_features.keys()[0])
     for sentence in sent_word_tokenized:
         post_features[1] += 1
-        ngramsentence = find_ngrams(sentence, ngrams)
-        for ngram in ngramsentence:
-            if ngram in ngram_features.keys():
-                if ngram in post_features[5]:
-                    post_features[5][ngram] += 1
-                else:
-                    post_features[5][ngram] = 1
+        if ngram_features:
+			ngramsentence = find_ngrams(sentence, ngrams)
+			for ngram in ngramsentence:
+				if ngram in ngram_features.keys():
+					if ngram in post_features[5]:
+						post_features[5][ngram] += 1
+					else:
+						post_features[5][ngram] = 1
         for token in sentence:
             post_features[2] += 1
             post_features[3] += len(token)
