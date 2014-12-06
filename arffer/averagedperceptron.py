@@ -247,14 +247,7 @@ def predict(instance):
 def score(instance):
     global weights
     return sum(weights[feature] for feature in instance)
-
-# def update(instance, label, x=1):
-    # global weights
-    # global bias
-    # if label is False:
-        # x *= -1
-    # for feature in instance:
-        # weights[feature] += x + bias     
+ 
         
 def update(instance, label, x=1):
     global weights
@@ -294,7 +287,8 @@ def read_arff(file):
                 continue
             #Crude way of making sure it's a data line
             if "{" in line:
-                instancefeatures = line.replace('{', '')
+                instancefeatures = line[line.find('{'):]
+                instancefeatures = instancefeatures.replace('{', '')
                 instancefeatures = instancefeatures.replace('}', '')
                 instancefeatures = instancefeatures.split(",")
                 instancefeature = [x.strip() for x in instancefeatures]
@@ -361,7 +355,7 @@ def extract_post_features(post, word_features, ngram_features):
         if ngram in post_features[5].keys():
             modified_list.append((number, post_features[5][ngram]))
 
-    
+   # print modified_list
     return [x[0] for x in modified_list]
     
 def get_test_posts(dir):
@@ -381,6 +375,8 @@ def get_arff_features(file):
     word_features = {}
     #ngram tuple as key and attr number as value
     ngram_features = {}
+    ngram_tuple_list = []
+    ngram_value_list = []
     with codecs.open(file, 'r', 'utf-8') as file:
         lines = file.readlines()
         for line in lines:
@@ -389,16 +385,22 @@ def get_arff_features(file):
                     #Another ugly hack, everything after percentage is supposed to be the word
                     word = line[line.find("%")+1:].strip()
                     value = line.split()[1][4:].strip()
+                    value = unicode(int(value) + 4)
                     word_features[word] = value
                     continue
                 if "ngram" in line and "%" in line:
                     ngram = tuple(line[line.find("%")+1:].strip().split())
+                    ngram_tuple_list.append(ngram)
                     value = line.split()[1][5:]
-                    ngram_features[ngram] = value
-        # for word, key in word_features.iteritems():
-            # print word + " : " + key
-        # for ngram, key in ngram_features.iteritems():
-            # print ngram , " : " + key
+                    ngram_value_list.append(value)
+    #In order to get the same features indices as the ones in the arff
+    #we need to add 4 to word values and add [number of word features] + 4 to ngram_features               
+    ngram_value_list = [unicode(int(x) + 4 + len(word_features)) for x in ngram_value_list]
+    ngram_features = dict(zip(ngram_tuple_list, ngram_value_list))
+    #print ngram_features
+
+
+
     return word_features, ngram_features
        
         
