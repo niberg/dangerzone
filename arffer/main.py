@@ -93,9 +93,9 @@ def read_posts(dir):
         if filename.startswith("sw"):
             pclass = 1
             
-        filename = os.path.join(dir, filename)
-        with codecs.open(filename, 'r', 'utf-8') as post:
-            posts.append([post.read(), pclass])
+        joinedfilename = os.path.join(dir, filename)
+        with codecs.open(joinedfilename, 'r', 'utf-8') as post:
+            posts.append([post.read(), pclass, filename])
     return posts
     
 def get_features(posts):
@@ -114,15 +114,14 @@ def get_features(posts):
         #Every post needs to keep track of this information
         #Class, sentence count, word count, total token length, words in sentence
         #Add dictionary of ngrams if needed
-        if ngrams > 0:
-            post_features = [0, 0, 0, 0, {}, {}]
-        else:
-            post_features = [0, 0, 0, 0, {}]
+
+        post_features = [0, 0, 0, 0, {}, {}, None]
+
         sent_tokenized = sent_tokenize(post[0])
         sent_word_tokenized = [word_tokenize(s) for s in sent_tokenized]
         #Get if sw or rant
         post_features[0] = post[1]
-        
+        post_features[6] = post[2]
         
         for sentence in sent_word_tokenized:
             if ngrams > 0:
@@ -210,8 +209,8 @@ def write_arff(post_features, top_words, top_ngrams=None):
     for x in post_features:
         average_word_length = float(x[3]) / x[2]
         average_sentence_length = float(x[2]) / x[1]
-        #Static write
-        f.write('{0 ' + str(x[0]) + ', 1 ' + str(x[1]) + ', 2 ' + str(average_word_length) + ', 3 ' + str(average_sentence_length))
+        #Static write x[6] is filename
+        f.write('%' + x[6] + ' {0 ' + str(x[0]) + ', 1 ' + str(x[1]) + ', 2 ' + str(average_word_length) + ', 3 ' + str(average_sentence_length))
         #Iterate through words in post, see if any are in top words, if so write word and frequency
         #Need to keep track of which attribute word belongs to
         for top_word in top_words:
