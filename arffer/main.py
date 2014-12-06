@@ -7,6 +7,7 @@ import getopt
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords as stp
 from collections import defaultdict
+import random
 
 top_n = 500
 threshold = 20
@@ -17,7 +18,7 @@ ngrams = 0
 top_n_ngrams = 100
 words = False
 stopwords = False
-
+customfeatures = False
 
 
 def main():
@@ -30,9 +31,10 @@ def main():
     global top_n_ngrams
     global words
     global stopwords
+    global customfeatures
 
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 'n:t:i:d:ha:gx:ws', ['top_n=', 'threshold=', 'input=', 'diffmeasure=', 'help', 'alpha=', 'ngrams=', 'top_n_ngrams=', 'words', 'stopwords'])
+        options, remainder = getopt.getopt(sys.argv[1:], 'n:t:i:d:ha:gx:wsc', ['top_n=', 'threshold=', 'input=', 'diffmeasure=', 'help', 'alpha=', 'ngrams=', 'top_n_ngrams=', 'words', 'stopwords', 'customfeatures'])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -60,6 +62,8 @@ def main():
             words = True
         elif opt in ('-s', '--stopwords'):
             stopwords = True
+        elif opt in ('-c', '--customfeatures'):
+            customfeatures = True
         
   
     if ngrams == 0 and words == False:
@@ -70,9 +74,12 @@ def main():
         post_features, word_freqs, ngram_freqs = get_features(posts)
     else:
         post_features, word_freqs = get_features(posts)
-    top_words = get_top_words(word_freqs)
+    if customfeatures:
+        top_words = get_top_words(word_freqs, False, get_custom_features())
+    else:
+        top_words = get_top_words(word_freqs, False)
     if ngrams > 0:
-        top_ngrams = get_top_words(ngram_freqs)
+        top_ngrams = get_top_words(ngram_freqs, True)
     if ngrams > 0:
         write_arff(post_features, top_words, top_ngrams)
     else:
@@ -199,7 +206,7 @@ def write_arff(post_features, top_words, top_ngrams=None):
     
     #Now we write the data
     #Use sparse data format
- 
+    random.shuffle(post_features)
     for x in post_features:
         average_word_length = float(x[3]) / x[2]
         average_sentence_length = float(x[2]) / x[1]
@@ -229,8 +236,10 @@ def write_arff(post_features, top_words, top_ngrams=None):
     f.close()
         
         
-def get_top_words(word_freqs):
+def get_top_words(word_freqs, ngram, customwords=[]):
     global stopwords
+    global customfeatures
+    global top_n
     differences = {}
     if stopwords:
         #Gets stopwords from nltk
@@ -249,7 +258,10 @@ def get_top_words(word_freqs):
                     rant = 0.001
                 #Get the relative difference between frequency for rant and frequency for sw
                 diff = (sw - rant)/float(sw)
-                differences[word] = diff
+                if customfeatures and word in customwords or ngram:
+                    differences[word] = diff
+                elif not customfeatures:
+                    differences[word] = diff
     elif diffmeasure == "absolute":
         for word, freqs in word_freqs.iteritems(): 
             if freqs[2] >= threshold:
@@ -257,7 +269,10 @@ def get_top_words(word_freqs):
                 rant = freqs[0]
                 #Get the absolute difference between frequency for rant and frequency for sw
                 diff = abs(sw - rant)
-                differences[word] = diff
+                if customfeatures and word in customwords or ngram:
+                    differences[word] = diff
+                elif not customfeatures:
+                    differences[word] = diff
     else:
         for word, freqs in word_freqs.iteritems(): 
             if freqs[2] >= threshold:
@@ -271,7 +286,10 @@ def get_top_words(word_freqs):
                 #Get the adjusted relative difference between frequency for rant and frequency for sw
                 #I found this on the INTERNET!
                 diff = 100 * ((sw - rant)/float(sw)) * (1 - math.exp(-(sw - rant)/alpha))
-                differences[word] = diff
+                if customfeatures and word in customwords or ngram:
+                    differences[word] = diff
+                elif not customfeatures:
+                    differences[word] = diff
                 
      
     
@@ -293,7 +311,7 @@ def get_top_words(word_freqs):
             for z in x:
                 if z in stop:
                     counter += 1
-            #If the entire tuple is composed of stopwords, we don't want  it
+            #If the entire tuple is composed of stopwords, we don't want it
             if counter == len(top_words[0]):
                 stoptuple = True
             #add all other tuples to the list
@@ -301,14 +319,22 @@ def get_top_words(word_freqs):
                 temp.append(x)
         #Replace top_words with filtered list
         top_words = temp
-    if not top_words or type(top_words[0]) is tuple:
+    if customfeatures and len(customwords) < top_n:
+        top_n = len(customwords)
+    if ngram:
         top_words = top_words[:top_n_ngrams]
     else:
         top_words = top_words[:top_n]
     
     return top_words
     
-
+def get_custom_features():
+    featureslist = []
+    with codecs.open('customfeatures.txt', 'r', 'utf-8') as f:
+        featureslist = f.readlines()
+        featureslist = [x.strip() for x in featureslist]
+    return featureslist
+        
     
 #Not really needed
 def get_dataset_features(posts):

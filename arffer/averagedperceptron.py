@@ -27,6 +27,7 @@ file = "dataset.arff"
 percentage = 100
 testfolder = "test"
 testonfolder = False
+verbose = False
 
 def main():
     global iterations
@@ -38,9 +39,10 @@ def main():
     global file
     global testfolder
     global testonfolder
+    global verbose
     
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 'd:n:b:itrp', ['dataset=', 'iterations=', 'bias=', 'interactive', 'test', 'train', 'testonfolder='])
+        options, remainder = getopt.getopt(sys.argv[1:], 'd:n:b:itrpv', ['dataset=', 'iterations=', 'bias=', 'interactive', 'test', 'train', 'testonfolder=', 'verbose'])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -74,32 +76,94 @@ def main():
             if test or interactive:
                 print "Only one of parameters test, train, testonfolder and interactive can be given."
                 usage()     
+        elif opt in ('-v', '--verbose'):
+            verbose = True
                 
 
 
     if testonfolder:
+        true_positives = 0
+        false_positives = 0
+        true_negatives = 0
+        false_negatives = 0
+        simple_true_positives = 0
+        simple_false_positives = 0
+        simple_true_negatives = 0
+        simple_false_negatives = 0
         word_features, ngram_features = get_arff_features(file)
         load()
         posts = get_test_posts(testfolder)
         for post in posts:
             features = extract_post_features(post[0], word_features, ngram_features)
             prediction = predict(features)
-            print post[1] + " " + str(prediction)
-            print "With features: \n"
-            for word, value in word_features.iteritems():
-                print value
-                if value in features:
-                    sys.stdout.write(word + ", ")
-            if ngrams:
-                for ngram, value in ngram_features.iteritems():
-                    if value in features:
-                        sys.stdout.write(", (")
-                        for x in ngram:
-                            sys.stdout.write(x + ", ")
-                        sys.stdout.write(")", )
-                    
-            print "\n\n"
-            
+            if "sw" in post[1]:
+                trueclass = True
+            else:
+                trueclass = False
+            simpleprediction = False
+            if "kill myself" in post[0] or "suicide" in post[0] or "killing myself" in post[0] or "hate myself" in post[0] or "no friends" in post[0] or "to die" in post[0] or "a burden" in post[0]:
+                simpleprediction = True
+            if prediction == trueclass:
+                if trueclass == True:
+                    true_positives += 1
+                else:
+                    true_negatives += 1
+            else:
+                if trueclass == False:
+                    false_positives += 1
+                else:
+                    false_negatives += 1
+            if trueclass == simpleprediction:
+                if trueclass == True:
+                    simple_true_positives += 1
+                else:
+                    simple_true_negatives += 1
+            else:
+                if trueclass == False:
+                    simple_false_positives += 1
+                else:
+                    simple_false_negatives += 1
+            if verbose:
+                print post[1] + " Prediction: " + str(prediction) + " Simple prediction: " + str(simpleprediction)
+            # if verbose:
+                # print "With features: \n"
+                # for word, value in word_features.iteritems():
+                    # print value
+                    # if value in features:
+                        # sys.stdout.write(word + ", ")
+                # if ngrams:
+                    # for ngram, value in ngram_features.iteritems():
+                        # if value in features:
+                            # sys.stdout.write(", (")
+                            # for x in ngram:
+                                # sys.stdout.write(x + ", ")
+                            # sys.stdout.write(")", )
+                        
+                # print "\n\n"
+                
+        precision = float(true_positives)/(true_positives + false_positives)
+        recall = float(true_positives)/(false_negatives + true_positives)
+        fscore = 2 * ((precision * recall)/(precision + recall))
+        simple_precision = float(simple_true_positives)/(simple_true_positives + simple_false_positives)
+        simple_recall = float(simple_true_positives)/(simple_false_negatives + simple_true_positives)
+        simple_fscore = 2 * ((simple_precision * simple_recall)/(simple_precision + simple_recall))        
+        
+        print "\n\n"
+        print "True positives: " + str(true_positives)
+        print "True negatives: " + str(true_negatives)
+        print "False positives: " + str(false_positives)
+        print "False negatives: " + str(false_negatives)      
+        print "Precision: " + str(precision*100) + " %"
+        print "Recall: " + str(recall*100) + " %"
+        print "F-score: " + str(fscore*100) + " %"    
+        print "\n\n"
+        print "Simple true positives: " + str(simple_true_positives)
+        print "Simple true negatives: " + str(simple_true_negatives)
+        print "Simple false positives: " + str(simple_false_positives)
+        print "Simple false negatives: " + str(simple_false_negatives)      
+        print "Simple precision: " + str(simple_precision*100) + " %"
+        print "Simple recall: " + str(simple_recall*100) + " %"
+        print "Simple f-score: " + str(simple_fscore*100) + " %"          
     if interactive:
         word_features, ngram_features = get_arff_features(file)
         load()
@@ -133,7 +197,6 @@ def main():
             
         for features, pclass in bin_features[1319:]:
             prediction = predict(features)
-
             if prediction == pclass:
                 if pclass == True:
                     true_positives += 1
