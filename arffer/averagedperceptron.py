@@ -161,11 +161,12 @@ def main():
     if train:
         all_features = read_arff(file)
         bin_features = binarize(all_features)
+        bin_features = bin_features[:1318]
                
 
         for i in range(iterations):
             random.shuffle(bin_features)
-            for features, pclass in bin_features[:1318]:
+            for features, pclass in bin_features:
                 learn(features, pclass)
             average()
             
