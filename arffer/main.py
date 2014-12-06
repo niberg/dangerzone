@@ -5,6 +5,7 @@ import operator
 import math
 import getopt
 from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.corpus import stopwords as stp
 from collections import defaultdict
 
 top_n = 500
@@ -15,6 +16,7 @@ alpha = 100
 ngrams = 0
 top_n_ngrams = 100
 words = False
+stopwords = False
 
 
 
@@ -27,9 +29,10 @@ def main():
     global ngrams
     global top_n_ngrams
     global words
+    global stopwords
 
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 'n:t:i:d:ha:gx:w', ['top_n=', 'threshold=', 'input=', 'diffmeasure=', 'help', 'alpha=', 'ngrams=', 'top_n_ngrams=', 'words'])
+        options, remainder = getopt.getopt(sys.argv[1:], 'n:t:i:d:ha:gx:ws', ['top_n=', 'threshold=', 'input=', 'diffmeasure=', 'help', 'alpha=', 'ngrams=', 'top_n_ngrams=', 'words', 'stopwords'])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -55,6 +58,9 @@ def main():
             top_n_ngrams = int(arg)
         elif opt in ('-w', '--words'):
             words = True
+        elif opt in ('-s', '--stopwords'):
+            stopwords = True
+        
   
     if ngrams == 0 and words == False:
         print "You need to specify either --ngrams <n> or --words or both."
@@ -224,7 +230,12 @@ def write_arff(post_features, top_words, top_ngrams=None):
         
         
 def get_top_words(word_freqs):
+    global stopwords
     differences = {}
+    if stopwords:
+        #Gets stopwords from nltk
+        stop = stp.words('english')
+    
     #Iterate through word frequencies
     if diffmeasure == "relative":
         for word, freqs in word_freqs.iteritems(): 
@@ -269,6 +280,27 @@ def get_top_words(word_freqs):
     #Get top x words
     top_words = [x[0] for x in sorted_differences]
     #It's an ngram list if it's a tuple
+    if stopwords and type(top_words[0]) is not tuple:
+        #Rebuild list without stopwords
+        top_words = [x for x in top_words if x not in stop]
+    elif stopwords and type(top_words[0]) is tuple:
+        ##Create temp holding list
+        temp = []
+        ##Iterate through tuples
+        for x in top_words:
+            stoptuple = False
+            counter = 0
+            for z in x:
+                if z in stop:
+                    counter += 1
+            #If the entire tuple is composed of stopwords, we don't want  it
+            if counter == len(top_words[0]):
+                stoptuple = True
+            #add all other tuples to the list
+            if not stoptuple:
+                temp.append(x)
+        #Replace top_words with filtered list
+        top_words = temp
     if not top_words or type(top_words[0]) is tuple:
         top_words = top_words[:top_n_ngrams]
     else:
