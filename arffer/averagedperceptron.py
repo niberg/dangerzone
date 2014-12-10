@@ -1,5 +1,4 @@
 from collections import defaultdict
-import getopt
 import sys
 import os
 import codecs
@@ -12,15 +11,13 @@ import operator
 
 class averagedperceptron:
 
-
     def __init__(self, iterations=4, bias=0):
         self.iterations = iterations
         self.bias = bias
         self.count = 0
         self.weights = defaultdict(int)
         self.cached_weights = defaultdict(int)
-        self.timestamps = defaultdict(int)
-     
+        self.timestamps = defaultdict(int)     
         
     def predict(self, instance):
         return self.score(instance) >= 0
@@ -29,9 +26,6 @@ class averagedperceptron:
         return sum(self.weights[feature] for feature in instance)
                  
     def update(self, instance, label, x=1):
-        global weights
-        global bias
-        global count
         self.count += 1
         #Increment or decrement weights
         if label is False:
@@ -137,7 +131,6 @@ class averagedperceptron:
             f = codecs.open(filename, 'r', 'utf-8')
             post = f.read()
             posts.append((post, file))
-
         return posts        
 
     def get_arff_features(self, file):
@@ -206,14 +199,12 @@ class averagedperceptron:
         print "Recall: " + str(recall*100) + " %"
         print "F-score: " + str(fscore*100) + " %"
         
-    def train_on_arff(self, file="dataset.arff", limit=1318):
-        
+    def train_on_arff(self, file="dataset.arff", limit=1318):       
         all_features = self.read_arff(file)
         bin_features = self.binarize(all_features)
         if limit > len(bin_features):
             limit = len(bin_features) - 1
         bin_features = bin_features[:limit]
-
         
         for i in range(self.iterations):
             random.shuffle(bin_features)
@@ -308,6 +299,5 @@ class averagedperceptron:
             print "Simple recall: " + str(simple_recall*100) + " %"
             print "Simple f-score: " + str(simple_fscore*100) + " %"    
             
-    if __name__ == "__main__":
-        main()
+
             
