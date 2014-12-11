@@ -24,6 +24,7 @@ try:
   curses.cbreak() # Disables line buffering (runs each key as it is pressed rather than waiting for the return key to pressed)
   curses.start_color() # Lets you use colors when highlighting selected menu option
   screen.keypad(1) # Capture input from keypad
+  curses.curs_set(0)
   
   # Change this to use different colors when highlighting
   curses.init_pair(1,curses.COLOR_BLACK, curses.COLOR_WHITE) # Sets up color pair #1, it does black text with white background
@@ -39,9 +40,9 @@ try:
     'options':[
           { 'title': "Download and classify from subreddit...", 'type': MENU, 'subtitle': "Please select subreddit...",
           'options': [
-            { 'title': "/r/suicidewatch", 'type': FUNCTION, 'function': '''download_and_classify('suicidewatch')''' },
-            { 'title': "/r/rant", 'type': FUNCTION, 'function': '''download_and_classify('rant')''' },
-            { 'title': "both", 'type': FUNCTION, 'function': 'print ''''Not implemented'''' },
+            { 'title': "/r/suicidewatch", 'type': FUNCTION, 'function': """download_and_classify('suicidewatch')""" },
+            { 'title': "/r/rant", 'type': FUNCTION, 'function': """download_and_classify('rant')""" },
+            { 'title': "both", 'type': FUNCTION, 'function': """print 'Not implemented yet'""" },
           ]
           },
     ]
@@ -167,6 +168,7 @@ try:
       
       if len(newsubs) < 1:
           print "No new submissions!"
+          raw_input("Press enter to return")
           return
       print "You have", len(newsubs), "post(s) to check"   
       for x in newsubs:
@@ -222,6 +224,7 @@ try:
           print "Precision: " + str(precision*100) + " %"
           print "Recall: " + str(recall*100) + " %"
           print "F-score: " + str(fscore*100) + " %"
+          raw_input("Press enter to continue")
    
   def move_classified(filename, destination):
       shutil.move(os.path.join(os.getcwd() + "/unknown_submissions/", filename), os.path.join(os.getcwd() + destination, filename)) 
@@ -262,6 +265,7 @@ try:
     
   
   def download_and_classify(subreddit):
+    global screen
     screen.keypad(0)
     curses.echo()
     curses.nocbreak()
@@ -284,7 +288,7 @@ try:
     curses.cbreak() # Disables line buffering (runs each key as it is pressed rather than waiting for the return key to pressed)
     curses.start_color() # Lets you use colors when highlighting selected menu option
     screen.keypad(1) # Capture input from keypad
-    
+    curses.curs_set(0)
     # Change this to use different colors when highlighting
     curses.init_pair(1,curses.COLOR_BLACK, curses.COLOR_WHITE) # Sets up color pair #1, it does black text with white background
     h = curses.color_pair(1) #h is the coloring for a highlighted menu option
