@@ -8,6 +8,9 @@ Introduction
 Dependencies
 ------------
 - NLTK
+- English pickle (NLTK punkt tokenizer data)
+- PRAW
+- readchar
 
 
 

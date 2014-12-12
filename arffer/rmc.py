@@ -1,19 +1,13 @@
-import praw
-import codecs
-import os
-import pickle
-import sys
+import codecs, os, pickle, sys, shutil, readchar, textwrap
 from averagedperceptron import *
-import shutil
 
-r = praw.Reddit(user_agent='team_marina')
-timestamp_last_post = 0
 recall = 0
 precision = 0
 tp = 0
 tn = 0
 fp = 0
 fn = 0
+
 #Prevent stupid windows cmd from crashing (hopefully)
 sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 def main():
@@ -23,104 +17,97 @@ def main():
         pass
     p = averagedperceptron()
     p.load() 
-    newsubs = get_submissions("rant")
-    check_submissions(newsubs, p, "rant")
+    newsubs = read_submissions()
+    check_submissions(newsubs, p)
     p.save()
     save_bot()
     
-def get_submissions(subreddit, limit=20):
-    global timestamp_last_post
-    submissions = r.get_subreddit(subreddit).get_new(limit=limit)
+def read_submissions():
     new_submissions = []
-    reversed = []
-    for x in submissions:
-        reversed.insert(0, x)
-    for x in reversed:
-        if x.created <= timestamp_last_post:
-            continue
-        new_submissions.append(x)
-        timestamp_last_post = x.created
-        dir = os.getcwd() + "/unknown_submissions/"
-        filename = subreddit + '_' + str(x.created) + '.txt'
-        file = os.path.join(dir, filename)
-        #Don't write unnecessarily
-        if os.path.isfile(file):
-            continue
-        if os.path.isfile(os.path.join("/suicidewatch_submissions/", filename)) or os.path.isfile(os.path.join("/rant_submissions/", filename)):
-            continue
-        f = codecs.open(file, 'w', 'utf-8')
-        f.write(x.title)
-        f.write("\n\n")
-        f.write(x.selftext)
-        f.close()
+    for file in os.listdir("unknown_submissions"):
+        filename = os.path.join("unknown_submissions", file)
+        f = codecs.open(filename, 'r', 'utf-8')
+        post = (f.read(), file)
+        new_submissions.append(post)
+
     return new_submissions
         
-def check_submissions(newsubs, p, subreddit):
+def check_submissions(newsubs, p):
     global tp
     global tn
     global fp
     global fn
     global precision
     global recall
+    global timestamp_last_post
     
     if len(newsubs) < 1:
         print "No new submissions!"
         return
     print "You have", len(newsubs), "post(s) to check"   
     for x in newsubs:
-        filename = subreddit + "_" + str(x.created) + ".txt"
+        filename = x[1]
         print "*" * 80
-        print x.title
-        print "\n"
-        print x.selftext
-        features = p.extract_post_features(x.title + "\n\n" + x.selftext)
+        print "Filename: ", filename
+        print "*" * 80
+        # titleEnd = x[0].find("\n")+1
+        # print x[0][:titleEnd]
+        # posttext = textwrap.wrap(x[0][titleEnd:], width=80)
+        # for line in posttext:
+        #     print line
+        posttext = x[0].split("\n")
+        posttext = [x for x in posttext if x]
+        for s in posttext:
+            #print textwrap.wrap(s, width=80)
+            for line in textwrap.wrap(s, width=80):
+                print line
+            print ""
+        features = p.extract_post_features(x[0])
         prediction = p.predict(features)
         print "*" * 80
         if prediction:
             print "The perceptron thinks this post contains suicidal language."
         else:
             print "The perceptron does not think this post contains suicidal language."
-        input = raw_input("Does this post contain suicidal language? yes/no\n")
-        while (input.lower() != "yes" and input.lower() != "no"):
-            print "Please enter yes or no."
-            input = raw_input("Does this post contain suicidal language? yes/no\n")
-        if input.lower() == "yes" and prediction:
+        print "Does this post contain suicidal language? [y]es/[n]o/[a]bort"
+        char = readchar.readchar()
+
+        while char != 'y' and char != 'n' and char != 'a':
+            print "Please press a key."
+            char = readchar.readchar()
+        if char == 'a':
+            save_bot()
+            print_statistics()
+            exit()
+        if char == "y" and prediction:
             print "Thank you, weights will not be adjusted."
             tp += 1
             #Move to sw folder
-            move_classified(filename, "/suicidewatch_submissions/")
-        elif input.lower() == "yes" and not prediction:
+            move_classified(filename, "/suicidal/")
+        elif char == "y" and not prediction:
             print "Thank you, weights will be adjusted."
             p.update(features, False)
             fn += 1
             #Move to sw folder
-            move_classified(filename, "/suicidewatch_submissions/")
-        elif input.lower() == "no" and not prediction:
+            move_classified(filename, "/suicidal/")
+        elif char == "n" and not prediction:
             print "Thank you, weights will not be adjusted."
             tn += 1
             #Move to rant folder
-            move_classified(filename, "/rant_submissions/")
-        elif input.lower() == "no" and prediction:
+            move_classified(filename, "/nonsuicidal/")
+        elif char == "n" and prediction:
             print "Thank you, weights will be adjusted."
             p.update(features, False)
             fp += 1
             #Move to rant folder
-            move_classified(filename, "/rant_submissions/")
-    #Prevent divide by zero error
-    if tp > 0:
-        precision = float(tp)/(tp + fp)
-        recall = float(tp)/(fn + tp)
-        fscore = 2 * ((precision * recall)/(precision + recall))
-        
-        print "Precision: " + str(precision*100) + " %"
-        print "Recall: " + str(recall*100) + " %"
-        print "F-score: " + str(fscore*100) + " %"
+            move_classified(filename, "/nonsuicidal/")
+    print_statistics()
+    
  
 def move_classified(filename, destination):
     shutil.move(os.path.join(os.getcwd() + "/unknown_submissions/", filename), os.path.join(os.getcwd() + destination, filename)) 
             
 def save_bot():
-    global timestamp_last_post
     global tp
     global tn
     global fp
@@ -128,7 +115,6 @@ def save_bot():
     global precision
     global recall
     with codecs.open("botsave.pickle", "wb") as file:
-        pickle.dump(timestamp_last_post, file, -1)
         pickle.dump(tp, file, -1)
         pickle.dump(tn, file, -1)
         pickle.dump(fp, file, -1)
@@ -137,7 +123,6 @@ def save_bot():
         pickle.dump(recall, file, -1)
 
 def load_bot():
-    global timestamp_last_post
     global tp
     global tn
     global fp
@@ -145,11 +130,20 @@ def load_bot():
     global precision
     global recall
     with codecs.open("botsave.pickle", "rb") as file:
-        timestamp_last_post = pickle.load(file)     
         tp = pickle.load(file)
         tn = pickle.load(file)
         fp = pickle.load(file)
         fn = pickle.load(file)
         precision = pickle.load(file)
         recall = pickle.load(file)    
+        
+def print_statistics():
+    if tp > 0:
+        precision = float(tp)/(tp + fp)
+        recall = float(tp)/(fn + tp)
+        fscore = 2 * ((precision * recall)/(precision + recall))
+        print "\nTotal combined results:"
+        print "Precision: " + str(precision*100) + " %"
+        print "Recall: " + str(recall*100) + " %"
+        print "F-score: " + str(fscore*100) + " %"
 main()
