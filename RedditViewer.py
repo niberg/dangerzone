@@ -1,8 +1,6 @@
 import codecs, os, pickle, sys, shutil, readchar, textwrap, random
 from Perceptron import *
 
-recall = 0
-precision = 0
 tp = 0
 tn = 0
 fp = 0
@@ -37,20 +35,22 @@ def check_submissions(newsubs, p):
     global tn
     global fp
     global fn
-    global precision
-    global recall
+    cur_tp = 0
+    cur_tn = 0
+    cur_fp = 0
+    cur_fn = 0
     global timestamp_last_post
     
     if len(newsubs) < 1:
         print "No new submissions!"
         return
     print "You have", len(newsubs), "post(s) to check"   
-    for x in newsubs:
+    for i, x in enumerate(newsubs):
         features = p.extract_post_features(x[0])
         prediction = p.predict(features)
         filename = x[1]
         print "*" * 80
-        print "Filename: ", filename
+        print "Filename: ", filename, "\t", str(i+1) + "/" + str(len(newsubs))
         print "*" * 80
         # titleEnd = x[0].find("\n")+1
         # print x[0][:titleEnd]
@@ -76,37 +76,50 @@ def check_submissions(newsubs, p):
         while char != 'y' and char != 'n' and char != 'a':
             print "Please press a key."
             char = readchar.readchar()
-        if char == 'a':
-            save_bot()
-            print_statistics()
+        if char == 'a':           
+            print "\nTotal combined results:"
+            print_statistics(tp, fp, tn, fn)
+            print "\nResults for this session:"
+            print_statistics(cur_tp, cur_fp, cur_tn, cur_fn)
             exit()
         if char == "y" and prediction:
+            save_bot()
             print "Thank you, weights will not be adjusted."
             tp += 1
+            cur_tp += 1
             #Move to sw folder
             move_classified(filename, "/suicidal/")
         elif char == "y" and not prediction:
+            save_bot()
             print "Thank you, weights will be adjusted."
             #Send features and correct label to perceptron
             p.update(features, True)
             p.save(silent=True)
             fn += 1
+            cur_fn += 1
             #Move to sw folder
             move_classified(filename, "/suicidal/")
         elif char == "n" and not prediction:
+            save_bot()
             print "Thank you, weights will not be adjusted."
             tn += 1
+            cur_tn += 1
             #Move to rant folder
             move_classified(filename, "/nonsuicidal/")
         elif char == "n" and prediction:
+            save_bot()
             print "Thank you, weights will be adjusted."
             #Send features and correct label to perceptron
             p.update(features, False)
             p.save(silent=True)
             fp += 1
+            cur_fp += 1
             #Move to rant folder
             move_classified(filename, "/nonsuicidal/")
-    print_statistics()
+    print "\nTotal combined results:"
+    print_statistics(tp, fp, tn, fn)
+    print "\nResults for this session:"
+    print_statistics(cur_tp, cur_fp, cur_tn, cur_fn)
     
  
 def move_classified(filename, destination):
@@ -117,40 +130,38 @@ def save_bot():
     global tn
     global fp
     global fn
-    global precision
-    global recall
     with codecs.open("botsave.pickle", "wb") as file:
         pickle.dump(tp, file, -1)
         pickle.dump(tn, file, -1)
         pickle.dump(fp, file, -1)
         pickle.dump(fn, file, -1)
-        pickle.dump(precision, file, -1)
-        pickle.dump(recall, file, -1)
 
 def load_bot():
     global tp
     global tn
     global fp
     global fn
-    global precision
-    global recall
     with codecs.open("botsave.pickle", "rb") as file:
         tp = pickle.load(file)
         tn = pickle.load(file)
         fp = pickle.load(file)
         fn = pickle.load(file)
-        precision = pickle.load(file)
-        recall = pickle.load(file)    
         
-def print_statistics():
+def print_statistics(tp, tn, fp, fn):
+    print "True positives:", tp
+    print "True negatives:", tn
+    print "False positives:", fp
+    print "False negatives:", fn
+    print ""
     if tp > 0:
         precision = float(tp)/(tp + fp)
         recall = float(tp)/(fn + tp)
         fscore = 2 * ((precision * recall)/(precision + recall))
-        print "\nTotal combined results:"
         print "Precision: " + str(precision*100) + " %"
         print "Recall: " + str(recall*100) + " %"
         print "F-score: " + str(fscore*100) + " %"
+
+       
         
 if __name__ == "__main__":    
     main()
