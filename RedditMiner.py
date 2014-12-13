@@ -44,5 +44,6 @@ def get_submissions(subreddit, limit=100):
         f.write("\n\n")
         f.write(x.selftext)
         f.close()
-    
-main()
+        
+if __name__ == "__main__":    
+    main()

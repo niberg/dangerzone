@@ -1,14 +1,9 @@
+import sys, os, codecs, re, random, pickle, operator
 from collections import defaultdict
-import sys
-import os
-import codecs
-import re
-import random
 from DatasetCreator import find_ngrams
-import pickle
 from nltk.tokenize import word_tokenize, sent_tokenize
-import operator
 
+#Implementation of a binary averaged perceptron
 class Perceptron:
 
     def __init__(self, iterations=4, bias=0, file="dataset.arff"):

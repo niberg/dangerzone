@@ -146,4 +146,6 @@ def print_statistics():
         print "Precision: " + str(precision*100) + " %"
         print "Recall: " + str(recall*100) + " %"
         print "F-score: " + str(fscore*100) + " %"
-main()
+        
+if __name__ == "__main__":    
+    main()

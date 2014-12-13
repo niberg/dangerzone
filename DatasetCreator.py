@@ -1,13 +1,8 @@
-import sys
-import os
-import codecs
-import operator
-import math
-import getopt
+import sys, os, codecs, operator, math, getopt, random
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.corpus import stopwords as stp
 from collections import defaultdict
-import random
+
 
 top_n = 500
 threshold = 20
@@ -391,11 +386,5 @@ def usage():
 def find_ngrams(input_list, n):
     return zip(*[input_list[i:] for i in range(n)])
     
-    
-
-    
-
-    
-
 if __name__ == "__main__":
     main()
