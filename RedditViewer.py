@@ -1,5 +1,5 @@
 import codecs, os, pickle, sys, shutil, readchar, textwrap
-from averagedperceptron import *
+from Perceptron import *
 
 recall = 0
 precision = 0
@@ -15,7 +15,7 @@ def main():
         load_bot()
     except:
         pass
-    p = averagedperceptron()
+    p = Perceptron()
     p.load() 
     newsubs = read_submissions()
     check_submissions(newsubs, p)

@@ -4,12 +4,13 @@ import os
 import codecs
 import re
 import random
+# Not needed anymore?
+#from main import *
 import pickle
 from nltk.tokenize import word_tokenize, sent_tokenize
-from main import *
 import operator
 
-class averagedperceptron:
+class Perceptron:
 
     def __init__(self, iterations=4, bias=0, file="dataset.arff"):
         self.iterations = iterations
