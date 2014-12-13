@@ -12,9 +12,10 @@ def main():
     train = False
     test = False
     entire = False
+    testfolder = None
 
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 'rts:b:d:i:e', ["train", "test", "save=", "bias=", "dataset=", "iterations=", "entire"])
+        options, remainder = getopt.getopt(sys.argv[1:], 'rts:b:d:i:ef:', ["train", "test", "save=", "bias=", "dataset=", "iterations=", "entire", "testfolder="])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -36,6 +37,9 @@ def main():
         elif opt in ('-e', '--entire'):
             train = True
             entire = True
+        elif opt in ('-f', '--testfolder'):
+            test = True
+            testfolder = arg
 
     perceptron = Perceptron(iterations, bias, dataset, savefile) 
     if not train and not test:
@@ -45,7 +49,8 @@ def main():
         
     elif train:
         perceptron.train_on_arff(entire=entire)
-        
+    elif testfolder:
+        perceptron.test_on_folder(testfolder=testfolder, truelabel="suicidewatch")
     elif test:
         perceptron.test_on_arff()
 
@@ -283,7 +288,7 @@ class Perceptron:
         
 
         
-    def test_on_folder(self, testfolder="testfolder", file="dataset.arff", verbose=False):
+    def test_on_folder(self, testfolder="testfolder", file="dataset.arff", verbose=True, truelabel="sw"):
         true_positives = 0
         false_positives = 0
         true_negatives = 0
@@ -292,13 +297,12 @@ class Perceptron:
         simple_false_positives = 0
         simple_true_negatives = 0
         simple_false_negatives = 0
-        word_features, ngram_features = self.get_arff_features(file)
         self.load()
         posts = self.get_test_posts(testfolder)
         for post in posts:
-            features = self.extract_post_features(post[0], word_features, ngram_features)
+            features = self.extract_post_features(post[0])
             prediction = self.predict(features)
-            if "sw" in post[1]:
+            if truelabel in post[1]:
                 trueclass = True
             else:
                 trueclass = False
