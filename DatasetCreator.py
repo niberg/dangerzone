@@ -6,14 +6,13 @@ from collections import defaultdict
 
 top_n = 500
 threshold = 20
-diffmeasure = "advanced"
+diffmeasure = "tf-idf"
 dataset = "source_data"
 alpha = 100
 ngrams = 0
 top_n_ngrams = 100
 words = False
 stopwords = False
-customfeatures = False
 onlysuicidalfeatures = False
 
 
@@ -27,11 +26,10 @@ def main():
     global top_n_ngrams
     global words
     global stopwords
-    global customfeatures
     global onlysuicidalfeatures
 
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 'n:t:i:d:ha:gx:wsco', ['top_n=', 'threshold=', 'input=', 'diffmeasure=', 'help', 'alpha=', 'ngrams=', 'top_n_ngrams=', 'words', 'stopwords', 'customfeatures', 'onlysuicidalfeatures'])
+        options, remainder = getopt.getopt(sys.argv[1:], 'n:t:i:d:ha:gx:wso', ['top_n=', 'threshold=', 'input=', 'diffmeasure=', 'help', 'alpha=', 'ngrams=', 'top_n_ngrams=', 'words', 'stopwords', 'onlysuicidalfeatures'])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -59,8 +57,6 @@ def main():
             words = True
         elif opt in ('-s', '--stopwords'):
             stopwords = True
-        elif opt in ('-c', '--customfeatures'):
-            customfeatures = True
         elif opt in ('-o', '--onlysuicidalfeatures'):
             onlysuicidalfeatures = True        
   
@@ -72,12 +68,10 @@ def main():
         post_features, word_freqs, ngram_freqs = get_features(posts)
     else:
         post_features, word_freqs = get_features(posts)
-    if customfeatures:
-        top_words = get_top_words(word_freqs, False, get_custom_features())
-    else:
-        top_words = get_top_words(word_freqs, False)
+
+    top_words = get_top_words(word_freqs, False, post_features)
     if ngrams > 0:
-        top_ngrams = get_top_words(ngram_freqs, True)
+        top_ngrams = get_top_words(ngram_freqs, True, post_features)
     if ngrams > 0:
         write_arff(post_features, top_words, top_ngrams)
     else:
@@ -232,33 +226,43 @@ def write_arff(post_features, top_words, top_ngrams=None):
             
     f.close()
         
-        
-def get_top_words(word_freqs, ngram, customwords=[]):
+def idf(word, list_of_docs):
+    return math.log(len(list_of_docs) / float(num_docs_containing(word, list_of_docs))) 
+    
+def tf(wordfreq, postlength):
+    return (wordfreq / float(postlength)) 
+    
+def get_top_words(word_freqs, ngram, post_features):
     global stopwords
-    global customfeatures
     global top_n
+    global ngrams
     differences = {}
     if stopwords:
         #Gets stopwords from nltk
         stop = stp.words('english')
     
+    #To-do: implement tf-idf
+    #"In practice, you compute the frequency of the term in the document (tf)
+    # and multiply it by the log of the inverse fraction of documents containing the term (idf)."
     #Iterate through word frequencies
-    if diffmeasure == "relative":
-        for word, freqs in word_freqs.iteritems(): 
-            if freqs[2] >= threshold:
-                sw = freqs[1]
-                rant = freqs[0]
-                #There's probably a more elegant way to prevent divide by zero errors
-                if sw == 0:
-                    sw = 0.001
-                if rant == 0:
-                    rant = 0.001
-                #Get the relative difference between frequency for rant and frequency for sw
-                diff = (sw - rant)/float(sw)
-                if customfeatures and word in customwords or ngram:
-                    differences[word] = diff
-                elif not customfeatures:
-                    differences[word] = diff
+    if diffmeasure == "tf-ids" and not ngram:
+        for post in post_features:
+            for word, freqs in word_freqs.iteritems():
+                if word in post[4]:
+                    if not onlysuicidalfeatures or freqs[1] > freqs[0]:
+                        tf = tf(post[4][word], post[2])
+                        idf = idf(len(post_features), freqs[2])
+                        differences[word] = tf * idf
+                    
+    elif diffmeasure == "tf-ids" and ngram:
+        for post in post_features:
+            for word, freqs in word_freqs.iteritems():
+                if word in post[5]:
+                    if not onlysuicidalfeatures or freqs[1] > freqs[0]:
+                        tf = tf(post[5][word], post[2]/float(ngrams))
+                        idf = idf(len(post_features), freqs[2])
+                        differences[word] = tf * idf
+                    
     elif diffmeasure == "absolute":
         for word, freqs in word_freqs.iteritems(): 
             if freqs[2] >= threshold:
@@ -266,9 +270,8 @@ def get_top_words(word_freqs, ngram, customwords=[]):
                 rant = freqs[0]
                 #Get the absolute difference between frequency for rant and frequency for sw
                 diff = abs(sw - rant)
-                if customfeatures and word in customwords or ngram:
-                    differences[word] = diff
-                elif not customfeatures:
+                #Test getting only sw words
+                if sw > rant or not onlysuicidalfeatures:
                     differences[word] = diff
     else:
         for word, freqs in word_freqs.iteritems(): 
@@ -286,10 +289,7 @@ def get_top_words(word_freqs, ngram, customwords=[]):
                     #Get the adjusted relative difference between frequency for rant and frequency for sw
                     #I found this on the INTERNET!
                     diff = 100 * ((sw - rant)/float(sw)) * (1 - math.exp(-(sw - rant)/alpha))
-                    if customfeatures and word in customwords or ngram:
-                        differences[word] = diff
-                    elif not customfeatures:
-                        differences[word] = diff
+                    differences[word] = diff
                 
      
     
@@ -319,8 +319,6 @@ def get_top_words(word_freqs, ngram, customwords=[]):
                 temp.append(x)
         #Replace top_words with filtered list
         top_words = temp
-    if customfeatures and len(customwords) < top_n:
-        top_n = len(customwords)
     if ngram:
         top_words = top_words[:top_n_ngrams]
     else:
@@ -328,12 +326,6 @@ def get_top_words(word_freqs, ngram, customwords=[]):
     
     return top_words
     
-def get_custom_features():
-    featureslist = []
-    with codecs.open('customfeatures.txt', 'r', 'utf-8') as f:
-        featureslist = f.readlines()
-        featureslist = [x.strip() for x in featureslist]
-    return featureslist
         
     
 #Not really needed
