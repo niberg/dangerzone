@@ -1,4 +1,4 @@
-import codecs, os, pickle, sys, shutil, readchar, textwrap
+import codecs, os, pickle, sys, shutil, readchar, textwrap, random
 from Perceptron import *
 
 recall = 0
@@ -29,7 +29,7 @@ def read_submissions():
         f = codecs.open(filename, 'r', 'utf-8')
         post = (f.read(), file)
         new_submissions.append(post)
-
+    random.shuffle(new_submissions)
     return new_submissions
         
 def check_submissions(newsubs, p):
@@ -87,7 +87,9 @@ def check_submissions(newsubs, p):
             move_classified(filename, "/suicidal/")
         elif char == "y" and not prediction:
             print "Thank you, weights will be adjusted."
-            p.update(features, False)
+            #Send features and correct label to perceptron
+            p.update(features, True)
+            p.save(silent=True)
             fn += 1
             #Move to sw folder
             move_classified(filename, "/suicidal/")
@@ -98,7 +100,9 @@ def check_submissions(newsubs, p):
             move_classified(filename, "/nonsuicidal/")
         elif char == "n" and prediction:
             print "Thank you, weights will be adjusted."
+            #Send features and correct label to perceptron
             p.update(features, False)
+            p.save(silent=True)
             fp += 1
             #Move to rant folder
             move_classified(filename, "/nonsuicidal/")

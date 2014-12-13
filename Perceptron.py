@@ -122,7 +122,7 @@ class Perceptron:
             binarized.append([feature, pclass])
         return binarized
         
-    def save(self, file=None):
+    def save(self, file=None, silent=False):
         if file == None:
             filename = self.savefile
         with codecs.open(filename, "wb") as file:
@@ -132,7 +132,8 @@ class Perceptron:
             pickle.dump(self.iterations, file, -1)
             pickle.dump(self.bias, file, -1)
             pickle.dump(self.dataset, file, -1)
-        print "Saved model in", filename, "\n"
+        if not silent:
+            print "Saved model in", filename, "\n"
             
             
     def load(self, file=None):
