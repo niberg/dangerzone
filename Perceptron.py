@@ -4,8 +4,7 @@ import os
 import codecs
 import re
 import random
-# Not needed anymore?
-#from main import *
+from DatasetCreator import find_ngrams
 import pickle
 from nltk.tokenize import word_tokenize, sent_tokenize
 import operator
