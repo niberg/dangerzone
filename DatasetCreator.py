@@ -226,8 +226,8 @@ def write_arff(post_features, top_words, top_ngrams=None):
             
     f.close()
         
-def idf(word, list_of_docs):
-    return math.log(len(list_of_docs) / float(num_docs_containing(word, list_of_docs))) 
+def idf(numberdocs, numberdocscontainingword):
+    return math.log(numberdocs) / float(numberdocscontainingword) 
     
 def tf(wordfreq, postlength):
     return (wordfreq / float(postlength)) 
@@ -236,7 +236,7 @@ def get_top_words(word_freqs, ngram, post_features):
     global stopwords
     global top_n
     global ngrams
-    differences = {}
+    differences = defaultdict(float)
     if stopwords:
         #Gets stopwords from nltk
         stop = stp.words('english')
@@ -245,23 +245,30 @@ def get_top_words(word_freqs, ngram, post_features):
     #"In practice, you compute the frequency of the term in the document (tf)
     # and multiply it by the log of the inverse fraction of documents containing the term (idf)."
     #Iterate through word frequencies
-    if diffmeasure == "tf-ids" and not ngram:
+    if diffmeasure == "tf-idf" and not ngram:
         for post in post_features:
             for word, freqs in word_freqs.iteritems():
                 if word in post[4]:
-                    if not onlysuicidalfeatures or freqs[1] > freqs[0]:
-                        tf = tf(post[4][word], post[2])
-                        idf = idf(len(post_features), freqs[2])
-                        differences[word] = tf * idf
+                    if freqs[2] > threshold:
+                        termfrequency = tf(post[4][word], post[2])
+                        inversedocfreq = idf(len(post_features), freqs[2])
+                        if post[0] == 1:
+                            differences[word] += (termfrequency * inversedocfreq)
+                        else:
+                            differences[word] -= (termfrequency * inversedocfreq)
+        
                     
-    elif diffmeasure == "tf-ids" and ngram:
+    elif diffmeasure == "tf-idf" and ngram:
         for post in post_features:
             for word, freqs in word_freqs.iteritems():
                 if word in post[5]:
-                    if not onlysuicidalfeatures or freqs[1] > freqs[0]:
-                        tf = tf(post[5][word], post[2]/float(ngrams))
-                        idf = idf(len(post_features), freqs[2])
-                        differences[word] = tf * idf
+                    if freqs[2] > threshold:
+                        termfrequency = tf(post[5][word], post[2])
+                        inversedocfreq = idf(len(post_features), freqs[2])
+                        if post[0] == 1:
+                            differences[word] += (termfrequency * inversedocfreq)
+                        else:
+                            differences[word] -= (termfrequency * inversedocfreq)
                     
     elif diffmeasure == "absolute":
         for word, freqs in word_freqs.iteritems(): 
