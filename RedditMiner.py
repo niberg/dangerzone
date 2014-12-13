@@ -32,7 +32,7 @@ def get_submissions(subreddit, limit=100):
     submissions = r.get_subreddit(subreddit).get_new(limit=limit)
     for x in submissions:
         dir = os.getcwd() + "/unknown_submissions/"
-        filename = subreddit + '_' + str(x.created) + '.txt'
+        filename = subreddit + '_' + str(x.id) + '.txt'
         file = os.path.join(dir, filename)
         #Don't write unnecessarily
         if os.path.isfile(file):
