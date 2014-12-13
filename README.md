@@ -3,7 +3,7 @@ dangerzone
 
 Introduction
 ------------
-- http://www.youtube.com/watch?v=siwpn14IE7E
+A project for the automatic retrieval and classification of reddit posts, focusing on detection of suicidal language.
 
 Dependencies
 ------------
