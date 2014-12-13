@@ -7,13 +7,14 @@ from collections import defaultdict
 top_n = 500
 threshold = 20
 diffmeasure = "advanced"
-dataset = "dataset"
+dataset = "source_data"
 alpha = 100
 ngrams = 0
 top_n_ngrams = 100
 words = False
 stopwords = False
 customfeatures = False
+onlysuicidalfeatures = False
 
 
 def main():
@@ -27,9 +28,10 @@ def main():
     global words
     global stopwords
     global customfeatures
+    global onlysuicidalfeatures
 
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 'n:t:i:d:ha:gx:wsc', ['top_n=', 'threshold=', 'input=', 'diffmeasure=', 'help', 'alpha=', 'ngrams=', 'top_n_ngrams=', 'words', 'stopwords', 'customfeatures'])
+        options, remainder = getopt.getopt(sys.argv[1:], 'n:t:i:d:ha:gx:wsco', ['top_n=', 'threshold=', 'input=', 'diffmeasure=', 'help', 'alpha=', 'ngrams=', 'top_n_ngrams=', 'words', 'stopwords', 'customfeatures', 'onlysuicidalfeatures'])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -59,7 +61,8 @@ def main():
             stopwords = True
         elif opt in ('-c', '--customfeatures'):
             customfeatures = True
-        
+        elif opt in ('-o', '--onlysuicidalfeatures'):
+            onlysuicidalfeatures = True        
   
     if ngrams == 0 and words == False:
         print "You need to specify either --ngrams <n> or --words or both."
@@ -277,13 +280,16 @@ def get_top_words(word_freqs, ngram, customwords=[]):
                     sw = 0.001
                 if rant == 0:
                     rant = 0.001
-                #Get the adjusted relative difference between frequency for rant and frequency for sw
-                #I found this on the INTERNET!
-                diff = 100 * ((sw - rant)/float(sw)) * (1 - math.exp(-(sw - rant)/alpha))
-                if customfeatures and word in customwords or ngram:
-                    differences[word] = diff
-                elif not customfeatures:
-                    differences[word] = diff
+                    
+                #Test getting only sw words
+                if sw > rant or not onlysuicidalfeatures:
+                    #Get the adjusted relative difference between frequency for rant and frequency for sw
+                    #I found this on the INTERNET!
+                    diff = 100 * ((sw - rant)/float(sw)) * (1 - math.exp(-(sw - rant)/alpha))
+                    if customfeatures and word in customwords or ngram:
+                        differences[word] = diff
+                    elif not customfeatures:
+                        differences[word] = diff
                 
      
     

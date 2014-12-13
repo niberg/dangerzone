@@ -46,6 +46,8 @@ def check_submissions(newsubs, p):
         return
     print "You have", len(newsubs), "post(s) to check"   
     for x in newsubs:
+        features = p.extract_post_features(x[0])
+        prediction = p.predict(features)
         filename = x[1]
         print "*" * 80
         print "Filename: ", filename
@@ -62,8 +64,7 @@ def check_submissions(newsubs, p):
             for line in textwrap.wrap(s, width=80):
                 print line
             print ""
-        features = p.extract_post_features(x[0])
-        prediction = p.predict(features)
+
         print "*" * 80
         if prediction:
             print "The perceptron thinks this post contains suicidal language."

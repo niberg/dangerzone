@@ -1,19 +1,69 @@
-import sys, os, codecs, re, random, pickle, operator
+import sys, os, codecs, re, random, pickle, operator, getopt
 from collections import defaultdict
 from DatasetCreator import find_ngrams
 from nltk.tokenize import word_tokenize, sent_tokenize
 
 #Implementation of a binary averaged perceptron
+def main():   
+    bias = 0
+    iterations = 4
+    dataset = "dataset.arff"
+    savefile = "model.sav"   
+    train = False
+    test = False
+    entire = False
+
+    try:
+        options, remainder = getopt.getopt(sys.argv[1:], 'rts:b:d:i:e', ["train", "test", "save=", "bias=", "dataset=", "iterations=", "entire"])
+    except getopt.GetoptError as err:
+        # print help information and exit:
+        print str(err) # will print something like "option -a not recognized"
+        sys.exit(2)
+
+    for opt, arg in options:
+        if opt in ('-r', '--train'):
+            train = True
+        elif opt in ('-t', '--test'):
+            test = True
+        elif opt in ('-s', '--savefile'):
+            savefile = arg
+        elif opt in ('-b', '--bias'):
+            bias = float(arg)
+        elif opt in ('-d', '--dataset'):
+            dataset = arg
+        elif opt in ('-i', '--iterations'):
+            iterations = int(arg)
+        elif opt in ('-e', '--entire'):
+            train = True
+            entire = True
+
+    perceptron = Perceptron(iterations, bias, dataset, savefile) 
+    if not train and not test:
+        print "Training and testing using default 66/33 % split on arff"
+        perceptron.train_on_arff()
+        perceptron.test_on_arff()
+        
+    elif train:
+        perceptron.train_on_arff(entire=entire)
+        
+    elif test:
+        perceptron.test_on_arff()
+
+
+
 class Perceptron:
 
-    def __init__(self, iterations=4, bias=0, file="dataset.arff"):
+
+    def __init__(self, iterations=4, bias=0, dataset="dataset.arff", savefile="model.sav"):
         self.iterations = iterations
         self.bias = bias
         self.count = 0
         self.weights = defaultdict(int)
         self.cached_weights = defaultdict(int)
         self.timestamps = defaultdict(int)
-        self.word_features, self.ngram_features = self.get_arff_features(file)
+        self.word_features, self.ngram_features = self.get_arff_features(dataset)
+        self.savefile = savefile
+        self.dataset = dataset
         
     def predict(self, instance):
         return self.score(instance) >= 0
@@ -44,7 +94,9 @@ class Perceptron:
             if averaged:
                 self.weights[feat] = averaged
                 
-    def read_arff(self, file="dataset.arff"):
+    def read_arff(self, file=None):
+        if file == None:
+            file == self.dataset
         all_features = []
         with codecs.open(file, 'r', 'utf-8') as file:
             lines = file.readlines()
@@ -70,15 +122,30 @@ class Perceptron:
             binarized.append([feature, pclass])
         return binarized
         
-    def save(self, file="model.sav"):
-        with codecs.open(file, "wb") as file:
+    def save(self, file=None):
+        if file == None:
+            filename = self.savefile
+        with codecs.open(filename, "wb") as file:
             pickle.dump(self.weights, file, -1)
             pickle.dump(self.cached_weights, file, -1)
+            pickle.dump(self.timestamps, file, -1)
+            pickle.dump(self.iterations, file, -1)
+            pickle.dump(self.bias, file, -1)
+            pickle.dump(self.dataset, file, -1)
+        print "Saved model in", filename, "\n"
             
-    def load(self, file="model.sav"):
-        with codecs.open(file, "rb") as file:
+            
+    def load(self, file=None):
+        if file == None:
+            filename = self.savefile    
+        with codecs.open(filename, "rb") as file:
             self.weights = pickle.load(file)
             self.cached_weights = pickle.load(file)
+            self.timestamps = pickle.load(file)
+            self.iterations = pickle.load(file)
+            self.bias = pickle.load(file)
+            self.dataset = pickle.load(file)
+        print "Loaded model from", filename, "\n"
             
     def extract_post_features(self, post):
         #Assume post consists of one string
@@ -161,7 +228,9 @@ class Perceptron:
     def test_on_arff(self, file="dataset.arff", limit=1319):
         all_features = self.read_arff(file)
         bin_features = self.binarize(all_features)
-        self.load()
+        #Load if weights are empty
+        if not self.weights:
+            self.load()
         true_positives = 0
         false_positives = 0
         true_negatives = 0
@@ -195,12 +264,13 @@ class Perceptron:
         print "Recall: " + str(recall*100) + " %"
         print "F-score: " + str(fscore*100) + " %"
         
-    def train_on_arff(self, file="dataset.arff", limit=1318):       
+    def train_on_arff(self, file="dataset.arff", limit=1318, entire=False):       
         all_features = self.read_arff(file)
         bin_features = self.binarize(all_features)
         if limit > len(bin_features):
             limit = len(bin_features) - 1
-        bin_features = bin_features[:limit]
+        if not entire:
+            bin_features = bin_features[:limit]
         
         for i in range(self.iterations):
             random.shuffle(bin_features)
@@ -209,7 +279,6 @@ class Perceptron:
             self.average()
             
         self.save()
-        print "Successfully trained perceptron and saved weights to file."
         
 
         
@@ -298,4 +367,5 @@ class Perceptron:
         print "Simple f-score: " + str(simple_fscore*100) + " %"    
             
 
-            
+if __name__ == "__main__":    
+    main()            
