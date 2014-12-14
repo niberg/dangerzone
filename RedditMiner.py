@@ -24,10 +24,15 @@ def main():
         print ""
     except:
         print 'Check your arguments.'
-    while True:   
-        for subreddit in toMonitor:
-            get_submissions(subreddit)
-        time.sleep(updateInterval*60)
+        exit()
+    try:
+        while True:   
+            for subreddit in toMonitor:
+                get_submissions(subreddit)
+            time.sleep(updateInterval*60)
+    except KeyboardInterrupt:
+        print "Exiting..."
+        exit()
             
 def get_submissions(subreddit, limit=5):
     global timestamp_last_post
