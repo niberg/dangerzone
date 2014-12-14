@@ -123,8 +123,10 @@ def check_submissions(newsubs, p):
     
  
 def move_classified(filename, destination):
-    shutil.move(os.path.join(os.getcwd() + "/unknown_submissions/", filename), os.path.join(os.getcwd() + destination, filename)) 
-            
+    if destination == "/nonsuicidal/":
+        shutil.move(os.path.join(os.getcwd() + "/unknown_submissions/", filename), os.path.join(os.getcwd() + destination, "false_"+filename)) 
+    else:     
+        shutil.move(os.path.join(os.getcwd() + "/unknown_submissions/", filename), os.path.join(os.getcwd() + destination, "true_"+filename))
 def save_bot():
     global tp
     global tn
