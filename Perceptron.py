@@ -115,7 +115,7 @@ class Perceptron:
                 if "@ATTRIBUTE" in line:
                     continue
                 if ".txt" in line:
-                    filename = line.strip()
+                    filename = line[1:].strip()
                 #Crude way of making sure it's a data line
                 if "{" in line:
                     instancefeatures = line[line.find('{'):]
