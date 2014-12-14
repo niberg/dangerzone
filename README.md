@@ -1,5 +1,5 @@
-dangerzone
-==========
+Reddit Miner and Classifier
+===========================
 
 Introduction
 ------------
@@ -7,10 +7,9 @@ A project for the automatic retrieval and classification of reddit posts, focusi
 
 Dependencies
 ------------
-- NLTK
-- English pickle (NLTK punkt tokenizer data)
-- PRAW
-- readchar
-
-
-
+- Python 2.7 / Python 3
+- Python libraries
+	- NLTK
+		- english.pickle (NLTK punkt tokenizer data)
+	- PRAW
+	- readchar

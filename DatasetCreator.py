@@ -230,7 +230,8 @@ def idf(numberdocs, numberdocscontainingword):
     return math.log(numberdocs) / float(numberdocscontainingword) 
     
 def tf(wordfreq, postlength):
-    return (wordfreq / float(postlength)) 
+    # return (wordfreq / float(postlength)) # Commented out in favour of absolute word frequency -Nils
+    return wordfreq
     
 def get_top_words(word_freqs, ngram, post_features):
     global stopwords
@@ -252,6 +253,8 @@ def get_top_words(word_freqs, ngram, post_features):
                     if freqs[2] > threshold:
                         termfrequency = tf(post[4][word], post[2])
                         inversedocfreq = idf(len(post_features), freqs[2])
+                        if len(post_features) < freqs[2]:
+                            print freqs[2]
                         if post[0] == 1:
                             differences[word] += (termfrequency * inversedocfreq)
                         else:

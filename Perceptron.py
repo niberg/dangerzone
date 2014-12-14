@@ -231,7 +231,8 @@ class Perceptron:
         ngram_features = dict(zip(ngram_tuple_list, ngram_value_list))
         return word_features, ngram_features
            
-    def test_on_arff(self, file="dataset.arff", limit=1319):
+    def test_on_arff(self, file="dataset.arff", limit=0): # Changed from 1319 -Nils
+        """To do testing on entire dataset, to find training errors, set limit to 0."""
         all_features = self.read_arff(file)
         bin_features = self.binarize(all_features)
         #Load if weights are empty
@@ -270,7 +271,8 @@ class Perceptron:
         print "Recall: " + str(recall*100) + " %"
         print "F-score: " + str(fscore*100) + " %"
         
-    def train_on_arff(self, file="dataset.arff", limit=1318, entire=False):       
+    def train_on_arff(self, file="dataset.arff", limit=1998, entire=False): # Changed from 1318 -Nils
+        """To do training on the entire dataset, set limit to 1998 (if used with source_data folder)."""
         all_features = self.read_arff(file)
         bin_features = self.binarize(all_features)
         if limit > len(bin_features):
