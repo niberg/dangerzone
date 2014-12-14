@@ -114,6 +114,8 @@ class Perceptron:
             for line in lines:
                 if "@ATTRIBUTE" in line:
                     continue
+                if ".txt" in line:
+                    filename = line.strip()
                 #Crude way of making sure it's a data line
                 if "{" in line:
                     instancefeatures = line[line.find('{'):]
@@ -121,16 +123,16 @@ class Perceptron:
                     instancefeatures = instancefeatures.replace('}', '')
                     instancefeatures = instancefeatures.split(",")
                     instancefeature = [x.strip() for x in instancefeatures]
-                    all_features.append(instancefeatures)
+                    all_features.append((filename, instancefeatures))
         return all_features
         
     def binarize(self, features):
         binarized = []
         for f in features:
-            feature = [x.split() for x in f]
+            feature = [x.split() for x in f[1]]
             pclass = bool(int(feature[0][1]))
             feature = [x[0] for x in feature]
-            binarized.append([feature, pclass])
+            binarized.append([feature, pclass, f[0]])
         return binarized
         
     def save(self, file=None, silent=False):
@@ -243,8 +245,9 @@ class Perceptron:
         false_negatives = 0
         if limit > len(bin_features):
             limit = len(bin_features) -1
-                
-        for features, pclass in bin_features[limit:]:
+        fp_files = []
+        fn_files = []
+        for features, pclass, name in bin_features[limit:]:
             prediction = self.predict(features)
             if prediction == pclass:
                 if pclass == True:
@@ -254,8 +257,10 @@ class Perceptron:
             else:
                 if pclass == False:
                     false_positives += 1
+                    fp_files.append(name)
                 else:
                     false_negatives += 1
+                    fn_files.append(name)
 
         print "True positives: " + str(true_positives)
         print "True negatives: " + str(true_negatives)
@@ -269,6 +274,13 @@ class Perceptron:
         print "Precision: " + str(precision*100) + " %"
         print "Recall: " + str(recall*100) + " %"
         print "F-score: " + str(fscore*100) + " %"
+        
+        print "\nFalse negative files:"
+        for f in fn_files:
+            print f
+        print "\nFalse positive files:"
+        for f in fp_files:
+            print f
         
     def train_on_arff(self, file="dataset.arff", limit=1998, entire=False): # Changed from 1318 -Nils
         """To do training on the entire dataset, set limit to 1998 (if used with source_data folder)."""
@@ -286,7 +298,7 @@ class Perceptron:
         for i in range(self.iterations):
             updatesThisEpoch = 0
             random.shuffle(bin_features)
-            for features, pclass in bin_features:
+            for features, pclass, name in bin_features:
                 if self.learn(features, pclass):
                     updatesThisEpoch = updatesThisEpoch + 1
                     totalUpdates = totalUpdates + 1
