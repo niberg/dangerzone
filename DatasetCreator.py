@@ -82,7 +82,7 @@ def read_posts(dir):
     
     for filename in os.listdir(dir):
         pclass = 0
-        if filename.startswith("sw"):
+        if filename.startswith("true"):
             pclass = 1
             
         joinedfilename = os.path.join(dir, filename)
