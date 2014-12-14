@@ -13,7 +13,8 @@ def main():
     test = False
     entire = False
     testfolder = None
-
+    stopAtXUpdates = 0
+    
     try:
         options, remainder = getopt.getopt(sys.argv[1:], 'rts:b:d:i:ef:', ["train", "test", "save=", "bias=", "dataset=", "iterations=", "entire", "testfolder="])
     except getopt.GetoptError as err:
@@ -40,6 +41,9 @@ def main():
         elif opt in ('-f', '--testfolder'):
             test = True
             testfolder = arg
+        elif opt in ('-c', '--converge'):
+            stopAtXUpdates = arg
+            
 
     perceptron = Perceptron(iterations, bias, dataset, savefile) 
     if not train and not test:
@@ -90,6 +94,8 @@ class Perceptron:
         prediction = self.predict(instance)
         if label != prediction:
             self.update(instance, label)
+            return True;
+        return False;
             
     def average(self):
         for feat, weight in self.weights.items():
@@ -275,18 +281,33 @@ class Perceptron:
         """To do training on the entire dataset, set limit to 1998 (if used with source_data folder)."""
         all_features = self.read_arff(file)
         bin_features = self.binarize(all_features)
+        totalUpdates = 0
+        updatesThisEpoch = 0
+        stopAtXUpdates = 100
+        
         if limit > len(bin_features):
             limit = len(bin_features) - 1
         if not entire:
             bin_features = bin_features[:limit]
         
         for i in range(self.iterations):
+            updatesThisEpoch = 0
             random.shuffle(bin_features)
             for features, pclass in bin_features:
-                self.learn(features, pclass)
+                if self.learn(features, pclass):
+                    updatesThisEpoch = updatesThisEpoch + 1
+                    totalUpdates = totalUpdates + 1
             self.average()
+            print 'Iteration ' + str(i) + ': made ' + str(updatesThisEpoch) + ' updates.'
+            if updatesThisEpoch == 0:
+                print 'Convergence was reached at iteration ' + str(i) + '.'
+                break;
+            elif updatesThisEpoch <= stopAtXUpdates:
+                print 'Stopped at iteration ' + str(i) + ' as per setting to stop when updates <' + str(stopAtXUpdates) + '.'
+                break;
             
         self.save()
+        print 'Total updates to weight vector: ' + str(totalUpdates) + '.'
         
 
         
