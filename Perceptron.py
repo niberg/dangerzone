@@ -41,7 +41,7 @@ def main():
             test = True
             testfolder = arg
 
-    perceptron = Perceptron(iterations, bias, dataset, savefile) 
+    perceptron = Perceptron(iterations=iterations, bias=bias, dataset=dataset, savefile=savefile) 
     if not train and not test:
         print "Training and testing using default 66/33 % split on arff"
         perceptron.train_on_arff()
@@ -155,40 +155,33 @@ class Perceptron:
             
     def extract_post_features(self, post):
         #Assume post consists of one string
-        post_features = [0, 0, 0, 0, {}, {}]
+        post_features = [0, {}, {}]
         sent_tokenized = sent_tokenize(post)
         sent_word_tokenized = [word_tokenize(s) for s in sent_tokenized]
         if self.ngram_features:
             ngrams = len(self.ngram_features.keys()[0])
         for sentence in sent_word_tokenized:
-            post_features[1] += 1
             if self.ngram_features:
                 ngramsentence = find_ngrams(sentence, ngrams)
                 for ngram in ngramsentence:
                     if ngram in self.ngram_features.keys():
-                        if ngram in post_features[5]:
-                            post_features[5][ngram] += 1
+                        if ngram in post_features[2]:
+                            post_features[2][ngram] += 1
                         else:
-                            post_features[5][ngram] = 1
+                            post_features[2][ngram] = 1
             for token in sentence:
-                post_features[2] += 1
-                post_features[3] += len(token)
                 if token in self.word_features.keys():
-                    if token in post_features[4]:
-                        post_features[4][token] += 1
+                    if token in post_features[1]:
+                        post_features[1][token] += 1
                     else:
-                        post_features[4][token] = 1
-                        
-        post_features[3] = float(post_features[2]) / post_features[1]
-        post_features[2] = float(post_features[3]) / post_features[2]
-        
-        modified_list = [(0, 0), (1, post_features[1]), (2, post_features[2]), (3, post_features[3])]
+                        post_features[1][token] = 1
+        modified_list = [(0, 0)]
         for word, number in self.word_features.iteritems():
-            if word in post_features[4].keys():
-                modified_list.append((number, post_features[4][word]))
+            if word in post_features[1].keys():
+                modified_list.append((number, post_features[1][word]))
         for ngram, number in self.ngram_features.iteritems():
-            if ngram in post_features[5].keys():
-                modified_list.append((number, post_features[5][ngram]))
+            if ngram in post_features[2].keys():
+                modified_list.append((number, post_features[2][ngram]))
 
        # print modified_list
         return [x[0] for x in modified_list]
@@ -217,7 +210,7 @@ class Perceptron:
                         #Another ugly hack, everything after percentage is supposed to be the word
                         word = line[line.find("%")+1:].strip()
                         value = line.split()[1][4:].strip()
-                        value = unicode(int(value) + 4)
+                        value = unicode(int(value) + 1)
                         word_features[word] = value
                         continue
                     if "ngram" in line and "%" in line:
@@ -226,8 +219,8 @@ class Perceptron:
                         value = line.split()[1][5:]
                         ngram_value_list.append(value)
         #In order to get the same features indices as the ones in the arff
-        #we need to add 4 to word values (done above) and add [number of word features] + 4 to ngram_features          
-        ngram_value_list = [unicode(int(x) + 4 + len(word_features)) for x in ngram_value_list]
+        #we need to add 1 to word values (done above) and add [number of word features] + 1 to ngram_features          
+        ngram_value_list = [unicode(int(x) + 1 + len(word_features)) for x in ngram_value_list]
         ngram_features = dict(zip(ngram_tuple_list, ngram_value_list))
         return word_features, ngram_features
            
@@ -278,7 +271,7 @@ class Perceptron:
         if limit > len(bin_features):
             limit = len(bin_features) - 1
         if not entire:
-            bin_features = bin_features[:limit]
+            bin_features = bin_features
         
         for i in range(self.iterations):
             random.shuffle(bin_features)
