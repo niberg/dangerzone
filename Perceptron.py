@@ -14,9 +14,11 @@ def main():
     entire = False
     testfolder = None
     stopAtXUpdates = 0
+    crossvalidate = False
+    folds = 10
     
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 'rts:b:d:i:ef:', ["train", "test", "save=", "bias=", "dataset=", "iterations=", "entire", "testfolder="])
+        options, remainder = getopt.getopt(sys.argv[1:], 'rts:b:d:i:ef:v:', ["train", "test", "save=", "bias=", "dataset=", "iterations=", "entire", "testfolder=", "crossvalidate="])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -41,13 +43,25 @@ def main():
         elif opt in ('-f', '--testfolder'):
             test = True
             testfolder = arg
+        elif opt in ('-v', '--crossvalidate'):
+            crossvalidate = True
+            folds = int(arg)
         elif opt in ('-c', '--converge'):
             stopAtXUpdates = arg
             
 
     perceptron = Perceptron(iterations=iterations, bias=bias, dataset=dataset, savefile=savefile) 
+    
+    if crossvalidate:
+        
+        all_features = perceptron.read_arff(dataset)
+        bin_features = perceptron.binarize(all_features)
+        perceptron.crossvalidate(bin_features, folds)
+        exit()
+            
+
     if not train and not test:
-        print "Training and testing using default 66/33 % split on arff"
+        #print "Training and testing using default 66/33 % split on arff"
         perceptron.train_on_arff()
         perceptron.test_on_arff()
         
@@ -214,7 +228,7 @@ class Perceptron:
             lines = file.readlines()
             for line in lines:
                 if "@ATTRIBUTE" in line:
-                    if "word" in line and "%" in line:
+                    if "word" in line and "%" in line and not "ngram" in line:
                         #Another ugly hack, everything after percentage is supposed to be the word
                         word = line[line.find("%")+1:].strip()
                         value = line.split()[1][4:].strip()
@@ -232,7 +246,7 @@ class Perceptron:
         ngram_features = dict(zip(ngram_tuple_list, ngram_value_list))
         return word_features, ngram_features
            
-    def test_on_arff(self, file="dataset.arff", limit=0): # Changed from 1319 -Nils
+    def test_on_arff(self, file="dataset.arff", limit=0, printerrors=False): # Changed from 1319 -Nils
         """To do testing on entire dataset, to find training errors, set limit to 0."""
         all_features = self.read_arff(file)
         bin_features = self.binarize(all_features)
@@ -275,12 +289,13 @@ class Perceptron:
         print "Recall: " + str(recall*100) + " %"
         print "F-score: " + str(fscore*100) + " %"
         
-        print "\nFalse negative files:"
-        for f in fn_files:
-            print f
-        print "\nFalse positive files:"
-        for f in fp_files:
-            print f
+        if printerrors:
+            print "\nFalse negative files:"
+            for f in fn_files:
+                print f
+            print "\nFalse positive files:"
+            for f in fp_files:
+                print f
         
     def train_on_arff(self, file="dataset.arff", limit=1998, entire=False): # Changed from 1318 -Nils
         """To do training on the entire dataset, set limit to 1998 (if used with source_data folder)."""
@@ -316,7 +331,7 @@ class Perceptron:
         
 
         
-    def test_on_folder(self, testfolder="testfolder", file="dataset.arff", verbose=True, truelabel="sw"):
+    def test_on_folder(self, testfolder="testfolder", file="dataset.arff", verbose=True, truelabel="true"):
         true_positives = 0
         false_positives = 0
         true_negatives = 0
@@ -374,22 +389,23 @@ class Perceptron:
                             # sys.stdout.write(")", )
                         
                 # print "\n\n"
-                
-        precision = float(true_positives)/(true_positives + false_positives)
-        recall = float(true_positives)/(false_negatives + true_positives)
-        fscore = 2 * ((precision * recall)/(precision + recall))
-        simple_precision = float(simple_true_positives)/(simple_true_positives + simple_false_positives)
-        simple_recall = float(simple_true_positives)/(simple_false_negatives + simple_true_positives)
-        simple_fscore = 2 * ((simple_precision * simple_recall)/(simple_precision + simple_recall))        
         
-        print "\n\n"
+        if true_positives > 0:
+            precision = float(true_positives)/(true_positives + false_positives)
+            recall = float(true_positives)/(false_negatives + true_positives)
+            fscore = 2 * ((precision * recall)/(precision + recall))
+     
+            print "Precision: " + str(precision*100) + " %"
+            print "Recall: " + str(recall*100) + " %"
+            print "F-score: " + str(fscore*100) + " %"           
+            print "\n\n"
         print "True positives: " + str(true_positives)
         print "True negatives: " + str(true_negatives)
         print "False positives: " + str(false_positives)
         print "False negatives: " + str(false_negatives)      
-        print "Precision: " + str(precision*100) + " %"
-        print "Recall: " + str(recall*100) + " %"
-        print "F-score: " + str(fscore*100) + " %"    
+        simple_precision = float(simple_true_positives)/(simple_true_positives + simple_false_positives)
+        simple_recall = float(simple_true_positives)/(simple_false_negatives + simple_true_positives)
+        simple_fscore = 2 * ((simple_precision * simple_recall)/(simple_precision + simple_recall))   
         print "\n\n"
         print "Simple true positives: " + str(simple_true_positives)
         print "Simple true negatives: " + str(simple_true_negatives)
@@ -400,5 +416,62 @@ class Perceptron:
         print "Simple f-score: " + str(simple_fscore*100) + " %"    
             
 
+            
+    def crossvalidate(self, binarizedfeatures, folds):
+        slicelength = len(binarizedfeatures)/folds
+        overallprecision = 0
+        overallrecall = 0
+        
+        for i in range(folds):
+            random.shuffle(binarizedfeatures)
+            test_set = binarizedfeatures[:slicelength]
+            training_set = binarizedfeatures[slicelength:]
+            self.crosstrain(training_set)
+            precision, recall = self.crosstest(training_set)
+            overallprecision += precision
+            overallrecall += recall
+            
+        overallprecision = float(overallprecision) / folds
+        overallrecall = float(overallrecall) / folds
+        overallfscore = 2 * ((overallprecision * overallrecall)/(overallprecision + overallrecall))
+         
+        print "Results after", folds, "folds:"
+        print "Overall precision: " + str(overallprecision*100) + " %"
+        print "Overall recall: " + str(overallrecall*100) + " %"
+        print "Overall f-score: " + str(overallfscore*100) + " %"            
+        
+    def crosstrain(self, featureslice):
+        for i in range(self.iterations):
+            random.shuffle(featureslice)
+            for features, pclass, name in featureslice:
+                self.learn(features, pclass)
+            self.average()        
+ 
+        
+    def crosstest(self, featureslice):
+        true_positives = 0
+        false_positives = 0
+        true_negatives = 0
+        false_negatives = 0
+        for features, pclass, name in featureslice:
+            prediction = self.predict(features)
+            if prediction == pclass:
+                if pclass == True:
+                    true_positives += 1
+                else:
+                    true_negatives += 1
+            else:
+                if pclass == False:
+                    false_positives += 1
+                else:
+                    false_negatives += 1
+        if true_positives > 0:
+            precision = float(true_positives)/(true_positives + false_positives)
+            recall = float(true_positives)/(false_negatives + true_positives)
+        else:
+            precision = 0
+            recall = 0
+        return (precision, recall)
+        
 if __name__ == "__main__":    
     main()            
