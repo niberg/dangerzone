@@ -125,14 +125,14 @@ def check_submissions(newsubs, p):
 def move_classified(filename, destination):
 
     if destination == "/nonsuicidal/":
-        if "true_" or "false_" in filename:
+        if "true_" in filename or "false_" in filename:
             newname =  "false_" + filename[filename.find("_")+1:]
             shutil.move(os.path.join(os.getcwd() + "/unknown_submissions/", filename), os.path.join(os.getcwd() + destination, newname))
         else:
             newname =  "false_" + filename
             shutil.move(os.path.join(os.getcwd() + "/unknown_submissions/", filename), os.path.join(os.getcwd() + destination, newname))
     else:
-        if "true_" or "false_" in filename:
+        if "true_" in filename or "false_" in filename:
             newname =  "true_" + filename[filename.find("_")+1:]
             shutil.move(os.path.join(os.getcwd() + "/unknown_submissions/", filename), os.path.join(os.getcwd() + destination, newname))
         else:
