@@ -198,6 +198,7 @@ def write_arff(post_features, top_words, top_ngrams=None):
     #Now we write the data
     #Use sparse data format
     random.shuffle(post_features)
+    num_word_features = len(top_words)
     for x in post_features:
         #average_word_length = float(x[3]) / x[2]
         #average_sentence_length = float(x[2]) / x[1]
@@ -220,7 +221,7 @@ def write_arff(post_features, top_words, top_ngrams=None):
                        #There are top_n + 1 attributes before the words (with zero-based index)
                        #If there are no words to write, we don't want to add the top_n variable
                         if top_words:
-                            f.write(', ' + str(top_ngrams.index(post_ngram)+1+top_n) + ' ' + str(freq))
+                            f.write(', ' + str(top_ngrams.index(post_ngram)+1+num_word_features) + ' ' + str(freq))
                         else:
                             f.write(', ' + str(top_ngrams.index(post_ngram)+1) + ' ' + str(freq))
         #Close curly braces and newline
