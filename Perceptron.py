@@ -484,18 +484,18 @@ class Perceptron:
             poppedNegative = 0
             
             for j in range(0, numberOfPositive / numberOfFolds):
-                fold.append(positiveInstances.pop)
+                fold.append(positiveInstances.pop())
                 poppedPositive += 1
                 
-                if len(positiveInstances) < numberOfPositive % numberOfFolds:
+                if len(positiveInstances) <= numberOfPositive % numberOfFolds:
                     for k in positiveInstances:
                         fold.append(positiveInstances[k])
                         
             for j in range(0, numberOfNegative / numberOfFolds):
-                fold.append(negativeInstances.pop)
+                fold.append(negativeInstances.pop())
                 poppedNegative += 1
                 
-                if len(negativeInstances) < numberOfNegative % numberOfFolds:
+                if len(negativeInstances) <= numberOfNegative % numberOfFolds:
                     for k in negativeInstances:
                         fold.append(negativeInstances[k])
                         
