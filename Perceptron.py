@@ -16,9 +16,10 @@ def main():
     stopAtXUpdates = 0
     crossvalidate = False
     folds = 10
+    top_n = 0
     
     try:
-        options, remainder = getopt.getopt(sys.argv[1:], 'rts:b:d:i:ef:v:', ["train", "test", "save=", "bias=", "dataset=", "iterations=", "entire", "testfolder=", "crossvalidate="])
+        options, remainder = getopt.getopt(sys.argv[1:], 'rts:b:d:i:ef:c:v:n:', ["train", "test", "save=", "bias=", "dataset=", "iterations=", "entire", "testfolder=", "converge=", "crossvalidate=", "top_n="])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -47,10 +48,12 @@ def main():
             crossvalidate = True
             folds = int(arg)
         elif opt in ('-c', '--converge'):
-            stopAtXUpdates = arg
+            stopAtXUpdates = int(arg)
+        elif opt in ('-n', '--top_n'):
+            top_n = int(arg)
             
 
-    perceptron = Perceptron(iterations=iterations, bias=bias, dataset=dataset, savefile=savefile) 
+    perceptron = Perceptron(iterations=iterations, bias=bias, dataset=dataset, savefile=savefile, top_n=top_n) 
     
     if crossvalidate:
         
@@ -77,7 +80,7 @@ def main():
 class Perceptron:
 
 
-    def __init__(self, iterations=4, bias=0, dataset="dataset.arff", savefile="model.sav"):
+    def __init__(self, iterations=4, bias=0, dataset="dataset.arff", savefile="model.sav", top_n=0):
         self.iterations = iterations
         self.bias = bias
         self.count = 0
@@ -87,6 +90,7 @@ class Perceptron:
         self.word_features, self.ngram_features = self.get_arff_features(dataset)
         self.savefile = savefile
         self.dataset = dataset
+        self.top_n = top_n
         
     def predict(self, instance):
         return self.score(instance) >= 0
@@ -120,23 +124,49 @@ class Perceptron:
                 self.weights[feat] = averaged
                 
     def read_arff(self, file=None):
-        if file == None:
-            file == self.dataset
+        if self.top_n > 0:
+            totalattributes = 0
+            ngramattributes = 0
+            wordattributes = 0
+        if not file:
+            file = self.dataset
         all_features = []
         with codecs.open(file, 'r', 'utf-8') as file:
             lines = file.readlines()
-            for line in lines:
+            for index,line in enumerate(lines):
+                #if ".txt" in line:
+                    #filename = line[1:].strip()
                 if "@ATTRIBUTE" in line:
-                    continue
-                if ".txt" in line:
-                    filename = line[1:].strip()
+                    if self.top_n > 0:
+                        totalattributes += 1
+                        isNgram = re.search(r'ngram[0-9]+', line)
+                        if isNgram:
+                            ngramattributes += 1
+                        else:
+                            wordattributes += 1
+                    else:
+                        continue
+
                 #Crude way of making sure it's a data line
-                if "{" in line:
+                featureline = re.match(r'\{.*}', line)
+                if featureline:
+                    filename = lines[index-1][1:].strip()
                     instancefeatures = line[line.find('{'):]
                     instancefeatures = instancefeatures.replace('{', '')
                     instancefeatures = instancefeatures.replace('}', '')
                     instancefeatures = instancefeatures.split(",")
                     instancefeature = [x.strip() for x in instancefeatures]
+                    if self.top_n > 0:
+                        if ngramattributes > 0 and wordattributes > 0:
+                            wordstouse = instancefeatures[:self.top_n/2]
+                            ngramstouse = instancefeatures[wordattributes:self.top_n/2]
+                            instancefeatures = wordstouse + ngramstouse
+                        elif wordattributes > 0:
+                            wordstouse = instancefeatures[:self.top_n]
+                            instancefeatures = wordstouse
+                        elif ngramattributes > 0:
+                            ngramstouse = instancefeatures[:self.top_n]
+                            instancefeatures = ngramstouse
                     all_features.append((filename, instancefeatures))
         return all_features
         
