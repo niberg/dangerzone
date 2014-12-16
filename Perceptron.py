@@ -465,12 +465,14 @@ class Perceptron:
         random.shuffle(negativeInstances)        
 
         folds = []
+        numberOfPositive = len(positiveInstances)
+        numberOfNegative = len(negativeInstances)
         
         for i in range(1, numberOfFolds):
             fold = []
-            for j in range(0, len(positiveInstances) / numberOfFolds):
+            for j in range(0, numberOfPositive / numberOfFolds):
                 fold.append(positiveInstances.pop)
-            for j in range(0, len(negativeInstances) / numberOfFolds):
+            for j in range(0, numberOfNegative / numberOfFolds):
                 fold.append(negativeInstances.pop)
             folds.append(fold)
         
