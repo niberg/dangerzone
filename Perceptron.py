@@ -61,7 +61,7 @@ def main():
             
 
     if not train and not test:
-        #print "Training and testing using default 66/33 % split on arff"
+        print "Training and testing using default 66/33 % split on arff"
         perceptron.train_on_arff()
         perceptron.test_on_arff()
         
@@ -246,8 +246,8 @@ class Perceptron:
         ngram_features = dict(zip(ngram_tuple_list, ngram_value_list))
         return word_features, ngram_features
            
-    def test_on_arff(self, file="dataset.arff", limit=0, printerrors=False): # Changed from 1319 -Nils
-        """To do testing on entire dataset, to find training errors, set limit to 0."""
+    def test_on_arff(self, file="dataset.arff", limit=2812, printerrors=False): # Changed from 1319 -Nils - Changed from 0 -Nicklas
+        """To do testing on entire dataset, to find training errors, use --entire flag."""
         all_features = self.read_arff(file)
         bin_features = self.binarize(all_features)
         #Load if weights are empty
@@ -297,18 +297,18 @@ class Perceptron:
             for f in fp_files:
                 print f
         
-    def train_on_arff(self, file="dataset.arff", limit=1998, entire=False): # Changed from 1318 -Nils
-        """To do training on the entire dataset, set limit to 1998 (if used with source_data folder)."""
+    def train_on_arff(self, file="dataset.arff", limit=2812, entire=False): # Changed from 1318 -Nils Changed from 1998 - Nicklas
+        """To do training on the entire dataset, use --entire flag."""
         all_features = self.read_arff(file)
         bin_features = self.binarize(all_features)
         totalUpdates = 0
         updatesThisEpoch = 0
-        stopAtXUpdates = 100
+        stopAtXUpdates = 10
         
         if limit > len(bin_features):
             limit = len(bin_features) - 1
         if not entire:
-            bin_features = bin_features
+            bin_features = bin_features[:limit]
         
         for i in range(self.iterations):
             updatesThisEpoch = 0
@@ -421,15 +421,20 @@ class Perceptron:
         slicelength = len(binarizedfeatures)/folds
         overallprecision = 0
         overallrecall = 0
+        random.shuffle(binarizedfeatures)
+        splitfeatures = list(chunks(binarizedfeatures, slicelength))
         
         for i in range(folds):
-            random.shuffle(binarizedfeatures)
-            test_set = binarizedfeatures[:slicelength]
-            training_set = binarizedfeatures[slicelength:]
+        
+            test_set = splitfeatures[i]
+            training_set = [x for x in splitfeatures if x != test_set]
+            training_set = [x for y in training_set for x in y]
             self.crosstrain(training_set)
-            precision, recall = self.crosstest(training_set)
+            precision, recall = self.crosstest(test_set)
             overallprecision += precision
             overallrecall += recall
+            print precision
+            print recall
             
         overallprecision = float(overallprecision) / folds
         overallrecall = float(overallrecall) / folds
@@ -441,12 +446,15 @@ class Perceptron:
         print "Overall f-score: " + str(overallfscore*100) + " %"            
         
     def crosstrain(self, featureslice):
+        #reset weights?
+        self.weights = defaultdict(int)
+        self.cached_weights = defaultdict(int)
+        self.timestamps = defaultdict(int)
         for i in range(self.iterations):
             random.shuffle(featureslice)
             for features, pclass, name in featureslice:
                 self.learn(features, pclass)
             self.average()        
- 
         
     def crosstest(self, featureslice):
         true_positives = 0
@@ -473,5 +481,10 @@ class Perceptron:
             recall = 0
         return (precision, recall)
         
+def chunks(l, n):
+    """ Yield successive n-sized chunks from l.
+    """
+    for i in xrange(0, len(l), n):
+        yield l[i:i+n]       
 if __name__ == "__main__":    
     main()            
