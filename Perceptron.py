@@ -130,12 +130,14 @@ class Perceptron:
             totalattributes = 0
             ngramattributes = 0
             wordattributes = 0
+            featurestouse = defaultdict(int)
+            featurestouse[0] = 1
         if not file:
             file = self.dataset
         all_features = []
         with codecs.open(file, 'r', 'utf-8') as file:
             lines = file.readlines()
-            for index,line in enumerate(lines):
+            for index, line in enumerate(lines):
                 #if ".txt" in line:
                     #filename = line[1:].strip()
                 if "@ATTRIBUTE" in line:
@@ -144,8 +146,13 @@ class Perceptron:
                         isNgram = re.search(r'ngram[0-9]+', line)
                         if isNgram:
                             ngramattributes += 1
+                            if wordattributes > 0:
+                                featurestouse[wordattributes+ngramattributes] = 1
+                            else:
+                                featurestouse[ngramattributes] = 1
                         else:
                             wordattributes += 1
+                            featurestouse[wordattributes] = 1
                     else:
                         continue
 
@@ -157,18 +164,14 @@ class Perceptron:
                     instancefeatures = instancefeatures.replace('{', '')
                     instancefeatures = instancefeatures.replace('}', '')
                     instancefeatures = instancefeatures.split(",")
-                    instancefeature = [x.strip() for x in instancefeatures]
+                    instancefeatures = [x.strip() for x in instancefeatures]
                     if self.top_n > 0:
-                        if ngramattributes > 0 and wordattributes > 0:
-                            wordstouse = instancefeatures[:self.top_n/2]
-                            ngramstouse = instancefeatures[wordattributes:self.top_n/2]
-                            instancefeatures = wordstouse + ngramstouse
-                        elif wordattributes > 0:
-                            wordstouse = instancefeatures[:self.top_n]
-                            instancefeatures = wordstouse
-                        elif ngramattributes > 0:
-                            ngramstouse = instancefeatures[:self.top_n]
-                            instancefeatures = ngramstouse
+                        templist = []
+                        for x in instancefeatures:
+                            if featurestouse[int(x[0])] == 1:
+                                templist.append(x)
+                        instancefeatures = templist
+
                     all_features.append((filename, instancefeatures))
         return all_features
         
@@ -465,9 +468,9 @@ class Perceptron:
             else:
                 negativeInstances.append(i)
                 numberOfAppendedNegative += 1
-        print 'Separated the dataset into two:'
-        print 'positiveInstances contains', numberOfAppendedPositive
-        print 'negativeInstances contains', numberOfAppendedNegative
+        # print 'Separated the dataset into two:'
+        # print 'positiveInstances contains', numberOfAppendedPositive
+        # print 'negativeInstances contains', numberOfAppendedNegative
         
         random.shuffle(positiveInstances)
         random.shuffle(negativeInstances)        
@@ -475,8 +478,8 @@ class Perceptron:
         folds = []
         numberOfPositive = len(positiveInstances)
         numberOfNegative = len(negativeInstances)
-        print 'Variable numberOfPositive is', numberOfPositive
-        print 'Variable numberOfNegative is', numberOfNegative
+        # print 'Variable numberOfPositive is', numberOfPositive
+        # print 'Variable numberOfNegative is', numberOfNegative
         
         for i in range(1, numberOfFolds+1):
             fold = []
@@ -503,9 +506,9 @@ class Perceptron:
                         
             random.shuffle(fold)
             folds.append(fold)
-            print 'Created new fold', i, ', containing', poppedPositive, 'positive instances and', poppedNegative, 'negative instances.'
-            print 'positiveInstanes now contains', len(positiveInstances), ' elements, and negativeInstances contains', len(negativeInstances), 'instances.'
-            print 'They should be empty.'
+            # print 'Created new fold', i, ', containing', poppedPositive, 'positive instances and', poppedNegative, 'negative instances.'
+            # print 'positiveInstanes now contains', len(positiveInstances), ' elements, and negativeInstances contains', len(negativeInstances), 'instances.'
+            # print 'They should be empty.'
             
         return folds
         
