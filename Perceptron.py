@@ -450,31 +450,42 @@ class Perceptron:
         print "Simple f-score: " + str(simple_fscore*100) + " %"    
             
 
-            
-    def crossvalidate(self, binarizedfeatures, folds):
-        slicelength = len(binarizedfeatures)/folds
+    def createStratifiedFolds(instances, numberOfFolds):
+        """Creates :numberOfFolds: subsets of the dataset, each with equal numbers of instances from each class."""
+        positiveInstances = []
+        negativeInstances = []
+        
+        for i in instances:
+            if i[1] == True:
+                positiveInstances.append(i)
+            else:
+                negativeInstances.append(i)
+        
+        random.shuffle(positiveInstances)
+        random.shuffle(negativeInstances)        
+
+        folds = []
+        
+        for i in range(1, numberOfFolds):
+            fold = []
+            for j in range(0, len(positiveInstances) / numberOfFolds):
+                fold.append(positiveInstances.pop)
+            for j in range(0, len(negativeInstances) / numberOfFolds):
+                fold.append(negativeInstances.pop)
+            folds.append(fold)
+        
+        return folds
+        
+    def crossvalidate(self, binarizedfeatures, numberOfFolds):
+        slicelength = len(binarizedfeatures) / numberOfFolds
         overallprecision = 0
         overallrecall = 0
         
-        #Split into positive and negative
-        positives = []
-        negatives = []
-        for i in binarizedfeatures:
-            #i[1] is pclass
-            if i[1] == True:
-                positives.append(i)
-            else:
-                negatives.append(i)
-        #Get random positive posts from positives   
-         #   while len(positives) > 0:
-           #     randompost = positives.pop(random.randrange(len(positives)))
-            
-        random.shuffle(positives)
-        random.shuffle(negatives)
+        folds = createStratifiedFolds(binarizedfeatures, 10)
         
         splitfeatures = list(chunks(binarizedfeatures, slicelength))
         
-        for i in range(folds):
+        for i in range(numberOfFolds):
         
             test_set = splitfeatures[i]
             print len(test_set)
@@ -487,11 +498,11 @@ class Perceptron:
             print "PR:", precision
             print "RE:", recall
             
-        overallprecision = float(overallprecision) / folds
-        overallrecall = float(overallrecall) / folds
+        overallprecision = float(overallprecision) / numberOfFolds
+        overallrecall = float(overallrecall) / numberOfFolds
         overallfscore = 2 * ((overallprecision * overallrecall)/(overallprecision + overallrecall))
          
-        print "Results after", folds, "folds:"
+        print "Results after", numberOfFolds, "folds:"
         print "Overall precision: " + str(overallprecision*100) + " %"
         print "Overall recall: " + str(overallrecall*100) + " %"
         print "Overall f-score: " + str(overallfscore*100) + " %"            
