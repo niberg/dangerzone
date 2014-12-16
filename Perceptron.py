@@ -455,11 +455,19 @@ class Perceptron:
         positiveInstances = []
         negativeInstances = []
         
+        numberOfAppendedPositive = 0
+        numberOfAppendedNegative = 0
+        
         for i in instances:
             if i[1] == True:
                 positiveInstances.append(i)
+                numberOfAppendedPositive += 1
             else:
                 negativeInstances.append(i)
+                numberOfAppendedNegative += 1
+        print 'Separated the dataset into two:'
+        print 'positiveInstances contains', numberOfAppendedPositive
+        print 'negativeInstances contains', numberOfAppendedNegative
         
         random.shuffle(positiveInstances)
         random.shuffle(negativeInstances)        
@@ -467,15 +475,21 @@ class Perceptron:
         folds = []
         numberOfPositive = len(positiveInstances)
         numberOfNegative = len(negativeInstances)
+        print 'Variable numberOfPositive is', numberOfPositive
+        print 'Variable numberOfNegative is', numberOfNegative
         
         for i in range(1, numberOfFolds+1):
             fold = []
+            poppedPositive = 0
+            poppedNegative = 0
             for j in range(0, numberOfPositive / numberOfFolds):
                 fold.append(positiveInstances.pop)
+                poppedPositive += 1
             for j in range(0, numberOfNegative / numberOfFolds):
                 fold.append(negativeInstances.pop)
-
+                poppedNegative += 1
             folds.append(fold)
+            print 'Created new fold', i, ', containing', poppedPositive, 'positive instances and', poppedNegative, 'negative instances.'
 
         return folds
         
