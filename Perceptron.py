@@ -489,7 +489,8 @@ class Perceptron:
                 
                 if len(positiveInstances) <= numberOfPositive % numberOfFolds:
                     for k in positiveInstances:
-                        fold.append(positiveInstances[k])
+                        fold.append(positiveInstances.pop())
+                        poppedPositive += 1
                         
             for j in range(0, numberOfNegative / numberOfFolds):
                 fold.append(negativeInstances.pop())
@@ -497,11 +498,14 @@ class Perceptron:
                 
                 if len(negativeInstances) <= numberOfNegative % numberOfFolds:
                     for k in negativeInstances:
-                        fold.append(negativeInstances[k])
+                        fold.append(negativeInstances.pop())
+                        poppedNegative += 1
                         
             random.shuffle(fold)
             folds.append(fold)
             print 'Created new fold', i, ', containing', poppedPositive, 'positive instances and', poppedNegative, 'negative instances.'
+            print 'positiveInstanes now contains', len(positiveInstances), ' elements, and negativeInstances contains', len(negativeInstances), 'instances.'
+            print 'They should be empty.'
             
         return folds
         
