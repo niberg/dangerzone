@@ -70,6 +70,8 @@ def main():
         
     elif train:
         perceptron.train_on_arff(entire=entire)
+        if entire:
+            perceptron.test_on_arff(entire=entire)
     elif testfolder:
         perceptron.test_on_folder(testfolder=testfolder, truelabel="suicidewatch")
     elif test:
@@ -276,7 +278,7 @@ class Perceptron:
         ngram_features = dict(zip(ngram_tuple_list, ngram_value_list))
         return word_features, ngram_features
            
-    def test_on_arff(self, file="dataset.arff", limit=2812, printerrors=False): # Changed from 1319 -Nils - Changed from 0 -Nicklas
+    def test_on_arff(self, file="dataset.arff", limit=2812, printerrors=False, entire=False): # Changed from 1319 -Nils - Changed from 0 -Nicklas
         """To do testing on entire dataset, to find training errors, use --entire flag."""
         all_features = self.read_arff(file)
         bin_features = self.binarize(all_features)
@@ -291,7 +293,9 @@ class Perceptron:
             limit = len(bin_features) -1
         fp_files = []
         fn_files = []
-        for features, pclass, name in bin_features[limit:]:
+        if not entire:
+            bin_features = bin_features[limit:]
+        for features, pclass, name in bin_features:
             prediction = self.predict(features)
             if prediction == pclass:
                 if pclass == True:
@@ -451,8 +455,23 @@ class Perceptron:
         slicelength = len(binarizedfeatures)/folds
         overallprecision = 0
         overallrecall = 0
-        random.seed(2)
-        random.shuffle(binarizedfeatures)
+        
+        #Split into positive and negative
+        positives = []
+        negatives = []
+        for i in binarizedfeatures:
+            #i[1] is pclass
+            if i[1] == True:
+                positives.append(i)
+            else:
+                negatives.append(i)
+        #Get random positive posts from positives   
+         #   while len(positives) > 0:
+           #     randompost = positives.pop(random.randrange(len(positives)))
+            
+        random.shuffle(positives)
+        random.shuffle(negatives)
+        
         splitfeatures = list(chunks(binarizedfeatures, slicelength))
         
         for i in range(folds):
@@ -479,7 +498,6 @@ class Perceptron:
         
     def crosstrain(self, featureslice):
         #reset weights?
-        random.seed(2)
         self.weights = defaultdict(int)
         self.cached_weights = defaultdict(int)
         self.timestamps = defaultdict(int)
