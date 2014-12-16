@@ -450,7 +450,7 @@ class Perceptron:
         print "Simple f-score: " + str(simple_fscore*100) + " %"    
             
 
-    def createStratifiedFolds(instances, numberOfFolds):
+    def createStratifiedFolds(self, instances, numberOfFolds):
         """Creates :numberOfFolds: subsets of the dataset, each with equal numbers of instances from each class."""
         positiveInstances = []
         negativeInstances = []
@@ -466,30 +466,32 @@ class Perceptron:
 
         folds = []
         
-        for i in range(1, numberOfFolds):
+        for i in range(1, numberOfFolds+1):
             fold = []
             for j in range(0, len(positiveInstances) / numberOfFolds):
-                fold.append(positiveInstances.pop)
+                fold.append(positiveInstances.pop())
             for j in range(0, len(negativeInstances) / numberOfFolds):
-                fold.append(negativeInstances.pop)
+                fold.append(negativeInstances.pop())
             folds.append(fold)
-        
+
         return folds
         
     def crossvalidate(self, binarizedfeatures, numberOfFolds):
-        slicelength = len(binarizedfeatures) / numberOfFolds
+        #slicelength = len(binarizedfeatures) / numberOfFolds
         overallprecision = 0
         overallrecall = 0
         
-        folds = createStratifiedFolds(binarizedfeatures, 10)
+        folds = self.createStratifiedFolds(binarizedfeatures, numberOfFolds)
         
-        splitfeatures = list(chunks(binarizedfeatures, slicelength))
+        #splitfeatures = list(chunks(binarizedfeatures, slicelength))
         
         for i in range(numberOfFolds):
         
-            test_set = splitfeatures[i]
+            #test_set = splitfeatures[i]
+            test_set = folds[i]
             print len(test_set)
-            training_set = [x for x in splitfeatures if x != test_set]
+            #training_set = [x for x in splitfeatures if x != test_set]
+            training_set = [x for x in folds if x != test_set] 
             training_set = [x for y in training_set for x in y]
             self.crosstrain(training_set)
             precision, recall = self.crosstest(test_set)
