@@ -451,20 +451,22 @@ class Perceptron:
         slicelength = len(binarizedfeatures)/folds
         overallprecision = 0
         overallrecall = 0
+        random.seed(2)
         random.shuffle(binarizedfeatures)
         splitfeatures = list(chunks(binarizedfeatures, slicelength))
         
         for i in range(folds):
         
             test_set = splitfeatures[i]
+            print len(test_set)
             training_set = [x for x in splitfeatures if x != test_set]
             training_set = [x for y in training_set for x in y]
             self.crosstrain(training_set)
             precision, recall = self.crosstest(test_set)
             overallprecision += precision
             overallrecall += recall
-            print precision
-            print recall
+            print "PR:", precision
+            print "RE:", recall
             
         overallprecision = float(overallprecision) / folds
         overallrecall = float(overallrecall) / folds
@@ -477,6 +479,7 @@ class Perceptron:
         
     def crosstrain(self, featureslice):
         #reset weights?
+        random.seed(2)
         self.weights = defaultdict(int)
         self.cached_weights = defaultdict(int)
         self.timestamps = defaultdict(int)
